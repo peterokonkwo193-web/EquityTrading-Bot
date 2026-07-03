@@ -1,64 +1,117 @@
 "use client";
 
-import { TrendingUp, DollarSign, Activity, Bot as BotIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { DollarSign, TrendingUp, Activity, Percent } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useAccount } from "@/context/AccountContext";
-import { useBotPolling } from "@/hooks/useBotPolling";
+import { useTradingStats } from "@/hooks/useTradingStats";
+import { fetchTradeHistory } from "@/lib/endpoints";
+import { SimulatedTrade } from "@/types";
+import { formatCurrency } from "@/lib/currency";
 import { SummaryCard } from "@/components/dashboard/SummaryCard";
-import { AccountOverview } from "@/components/dashboard/AccountOverview";
-import { QuickActions } from "@/components/dashboard/QuickActions";
+import { PriceTicker } from "@/components/dashboard/PriceTicker";
+import { SecurityBadges } from "@/components/dashboard/SecurityBadges";
+import { LineAreaChart, LineAreaChartPoint } from "@/components/charts/LineAreaChart";
+import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { StatusBadge } from "@/components/ui/Badge";
+
+function buildPerformanceSeries(trades: SimulatedTrade[]): LineAreaChartPoint[] {
+  const closed = trades
+    .filter((t) => t.status === "CLOSED" && t.closedAt)
+    .sort((a, b) => new Date(a.closedAt!).getTime() - new Date(b.closedAt!).getTime());
+
+  let running = 0;
+  return closed.map((t, i) => {
+    running += Number(t.profitLoss);
+    return { label: `#${i + 1}`, value: Math.round(running * 100) / 100 };
+  });
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { selectedAccount, isLoading: isAccountLoading } = useAccount();
-  const { bot, isLoading: isBotLoading } = useBotPolling(selectedAccount?.id ?? null);
+  const accountId = selectedAccount?.id ?? null;
+  const { stats, isLoading: isStatsLoading } = useTradingStats(accountId);
+  const [performance, setPerformance] = useState<LineAreaChartPoint[]>([]);
+
+  useEffect(() => {
+    if (!accountId) return;
+    let cancelled = false;
+    fetchTradeHistory(accountId)
+      .then((trades) => {
+        if (!cancelled) setPerformance(buildPerformanceSeries(trades));
+      })
+      .catch(() => {
+        if (!cancelled) setPerformance([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [accountId, stats?.tradesCount]);
 
   const firstName = user?.name.split(" ")[0] ?? "there";
+  const currency = selectedAccount?.currency ?? "USD";
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h2 className="text-2xl font-semibold text-text-primary">Welcome back, {firstName}</h2>
-        <p className="text-sm text-text-secondary">Here&apos;s what&apos;s happening with your trading account today.</p>
+        <p className="text-sm text-text-secondary">
+          Simulated trading dashboard — paper trading only, no real funds at risk.
+        </p>
       </div>
 
-      {isAccountLoading ? <Skeleton className="h-24 w-full" /> : <AccountOverview />}
+      <PriceTicker />
+
+      {isAccountLoading || !selectedAccount ? (
+        <Skeleton className="h-24 w-full" />
+      ) : (
+        <Card className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-text-secondary">Balance</p>
+            <p className="text-2xl font-semibold text-text-primary">
+              {formatCurrency(selectedAccount.balance, currency)}
+            </p>
+          </div>
+          <p className="text-sm text-text-muted">{selectedAccount.name}</p>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {isBotLoading || !bot ? (
+        {isStatsLoading || !stats ? (
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
         ) : (
           <>
             <SummaryCard
-              icon={DollarSign}
-              label="Total P&L"
-              value={`${Number(bot.totalPnl) >= 0 ? "+" : ""}$${Number(bot.totalPnl).toFixed(2)}`}
-              accent={Number(bot.totalPnl) >= 0 ? "primary" : "danger"}
+              icon={TrendingUp}
+              label="Today's Profit"
+              value={formatCurrency(stats.todayPnl, currency)}
+              accent={Number(stats.todayPnl) >= 0 ? "gold" : "danger"}
             />
             <SummaryCard
-              icon={TrendingUp}
-              label="Today's P&L"
-              value={`${Number(bot.todayPnl) >= 0 ? "+" : ""}$${Number(bot.todayPnl).toFixed(2)}`}
-              accent={Number(bot.todayPnl) >= 0 ? "primary" : "danger"}
+              icon={DollarSign}
+              label="Total Profit"
+              value={formatCurrency(stats.totalPnl, currency)}
+              accent={Number(stats.totalPnl) >= 0 ? "gold" : "danger"}
             />
-            <SummaryCard icon={Activity} label="Trades" value={String(bot.tradesCount)} accent="neutral" />
-            <div className="flex flex-col justify-center gap-2 rounded-2xl border border-card-border bg-card p-6 shadow-card">
-              <div className="flex items-center gap-2 text-text-secondary">
-                <BotIcon className="h-4 w-4" />
-                <span className="text-sm">Bot status</span>
-              </div>
-              <StatusBadge status={bot.status} />
-            </div>
+            <SummaryCard icon={Activity} label="Total Trades" value={String(stats.tradesCount)} accent="blue" />
+            <SummaryCard icon={Percent} label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} accent="blue" />
           </>
         )}
       </div>
 
-      <div>
-        <h3 className="mb-3 text-sm font-semibold text-text-secondary">Quick actions</h3>
-        <QuickActions />
-      </div>
+      <Card>
+        <h3 className="mb-4 text-sm font-semibold text-text-secondary">Performance Chart</h3>
+        {performance.length === 0 ? (
+          <p className="py-8 text-center text-sm text-text-muted">
+            No simulated trades yet. Start a trade to see your performance curve.
+          </p>
+        ) : (
+          <LineAreaChart data={performance} color="gold" valuePrefix={currency === "USD" ? "$" : ""} />
+        )}
+      </Card>
+
+      <SecurityBadges />
     </div>
   );
 }

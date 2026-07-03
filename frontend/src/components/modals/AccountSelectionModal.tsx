@@ -22,7 +22,7 @@ export function AccountSelectionModal({ isOpen, onClose }: { isOpen: boolean; on
               }}
               className={clsx(
                 "flex items-center justify-between rounded-xl border p-4 text-left transition-colors",
-                isSelected ? "border-primary bg-primary-muted/30" : "border-card-border bg-background-elevated hover:border-text-muted"
+                isSelected ? "border-primary bg-primary-muted/30" : "border-white/10 bg-white/[0.03] hover:border-white/20"
               )}
             >
               <div>

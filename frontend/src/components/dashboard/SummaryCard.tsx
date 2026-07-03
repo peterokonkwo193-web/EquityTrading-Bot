@@ -6,14 +6,14 @@ interface SummaryCardProps {
   icon: LucideIcon;
   label: string;
   value: string;
-  accent?: "primary" | "danger" | "warning" | "neutral";
+  accent?: "blue" | "gold" | "danger" | "neutral";
 }
 
 const ACCENT_CLASSES = {
-  primary: "text-primary bg-primary-muted",
+  blue: "text-primary bg-primary-muted",
+  gold: "text-gold bg-gold-muted",
   danger: "text-danger bg-danger-muted",
-  warning: "text-warning bg-warning-muted",
-  neutral: "text-text-secondary bg-background-elevated",
+  neutral: "text-text-secondary bg-white/[0.04]",
 };
 
 export function SummaryCard({ icon: Icon, label, value, accent = "neutral" }: SummaryCardProps) {

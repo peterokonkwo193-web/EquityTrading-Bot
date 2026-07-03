@@ -26,7 +26,7 @@ export function Toggle({
         onClick={() => onChange(!checked)}
         className={clsx(
           "relative h-6 w-11 shrink-0 rounded-full transition-colors",
-          checked ? "bg-primary" : "bg-card-border"
+          checked ? "bg-primary" : "bg-white/10"
         )}
       >
         <span

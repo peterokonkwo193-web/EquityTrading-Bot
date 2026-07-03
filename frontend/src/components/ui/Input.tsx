@@ -24,8 +24,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={clsx(
-              "w-full rounded-xl border bg-background-elevated px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/40",
-              error ? "border-danger" : "border-card-border",
+              "w-full rounded-xl border bg-white/[0.03] px-3.5 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/40",
+              error ? "border-danger" : "border-white/10",
               rightElement && "pr-10",
               className
             )}

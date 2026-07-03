@@ -14,8 +14,8 @@ export function Card({ hoverable = false, className, children, ...props }: CardP
       whileHover={hoverable ? { y: -2 } : undefined}
       transition={{ duration: 0.15 }}
       className={clsx(
-        "rounded-2xl border border-card-border bg-card p-6 shadow-card",
-        hoverable && "hover:shadow-glow",
+        "glass rounded-2xl p-6 shadow-card",
+        hoverable && "hover:shadow-glow-blue transition-shadow",
         className
       )}
       {...(props as React.ComponentProps<typeof motion.div>)}

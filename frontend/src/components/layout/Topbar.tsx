@@ -3,12 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, Bell, ChevronDown, User as UserIcon, LogOut, Wallet } from "lucide-react";
+import { Menu, ChevronDown, Settings as SettingsIcon, LogOut, Wallet } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { useAuth } from "@/context/AuthContext";
 import { useAccount } from "@/context/AccountContext";
-import { fetchNotifications, markAllNotificationsRead } from "@/lib/endpoints";
-import { Notification } from "@/types";
 import { NAV_ITEMS } from "./navItems";
 
 interface TopbarProps {
@@ -34,33 +32,14 @@ export function Topbar({ onMenuClick, onLogoutClick, onAccountSwitchClick }: Top
   const router = useRouter();
   const { user } = useAuth();
   const { selectedAccount } = useAccount();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  const notifRef = useOutsideClick(() => setIsNotifOpen(false));
   const profileRef = useOutsideClick(() => setIsProfileOpen(false));
 
   const pageTitle = NAV_ITEMS.find((item) => pathname.startsWith(item.href))?.label ?? "Dashboard";
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  useEffect(() => {
-    fetchNotifications()
-      .then(setNotifications)
-      .catch(() => setNotifications([]));
-  }, []);
-
-  const handleOpenNotifications = () => {
-    setIsNotifOpen((prev) => !prev);
-    if (!isNotifOpen && unreadCount > 0) {
-      markAllNotificationsRead()
-        .then(() => setNotifications((prev) => prev.map((n) => ({ ...n, read: true }))))
-        .catch(() => {});
-    }
-  };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-card-border bg-background/80 px-4 backdrop-blur-md md:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/10 bg-black/70 px-4 backdrop-blur-md md:px-6">
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
@@ -75,52 +54,11 @@ export function Topbar({ onMenuClick, onLogoutClick, onAccountSwitchClick }: Top
       <div className="flex items-center gap-2 md:gap-4">
         <button
           onClick={onAccountSwitchClick}
-          className="hidden items-center gap-2 rounded-xl border border-card-border bg-card px-3 py-2 text-sm text-text-secondary hover:border-text-muted sm:flex"
+          className="glass hidden items-center gap-2 rounded-xl px-3 py-2 text-sm text-text-secondary hover:text-text-primary sm:flex"
         >
           <Wallet className="h-4 w-4" />
           {selectedAccount ? selectedAccount.name : "Select account"}
         </button>
-
-        <div ref={notifRef} className="relative">
-          <button
-            onClick={handleOpenNotifications}
-            className="relative text-text-secondary hover:text-text-primary"
-            aria-label="Notifications"
-          >
-            <Bell className="h-5 w-5" />
-            {unreadCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[10px] font-semibold text-white">
-                {unreadCount}
-              </span>
-            )}
-          </button>
-
-          <AnimatePresence>
-            {isNotifOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.15 }}
-                className="absolute right-0 mt-3 w-80 rounded-2xl border border-card-border bg-card p-2 shadow-card"
-              >
-                <p className="px-3 py-2 text-sm font-semibold text-text-primary">Notifications</p>
-                <div className="max-h-80 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <p className="px-3 py-4 text-sm text-text-muted">No notifications yet.</p>
-                  ) : (
-                    notifications.map((n) => (
-                      <div key={n.id} className="rounded-xl px-3 py-2 hover:bg-background-elevated">
-                        <p className="text-sm font-medium text-text-primary">{n.title}</p>
-                        <p className="text-xs text-text-muted">{n.message}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
 
         <div ref={profileRef} className="relative">
           <button
@@ -139,24 +77,24 @@ export function Topbar({ onMenuClick, onLogoutClick, onAccountSwitchClick }: Top
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15 }}
-                className="absolute right-0 mt-3 w-52 rounded-2xl border border-card-border bg-card p-2 shadow-card"
+                className="glass absolute right-0 mt-3 w-52 rounded-2xl p-2 shadow-card"
               >
                 <button
                   onClick={() => {
                     setIsProfileOpen(false);
-                    router.push("/profile");
+                    router.push("/settings");
                   }}
-                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-text-secondary hover:bg-background-elevated hover:text-text-primary"
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary"
                 >
-                  <UserIcon className="h-4 w-4" />
-                  Profile
+                  <SettingsIcon className="h-4 w-4" />
+                  Settings
                 </button>
                 <button
                   onClick={() => {
                     setIsProfileOpen(false);
                     onLogoutClick();
                   }}
-                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-text-secondary hover:bg-background-elevated hover:text-danger"
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-text-secondary hover:bg-white/5 hover:text-danger"
                 >
                   <LogOut className="h-4 w-4" />
                   Logout

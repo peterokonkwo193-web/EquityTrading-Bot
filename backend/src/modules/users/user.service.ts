@@ -15,6 +15,7 @@ export async function getProfile(userId: string) {
     email: user.email,
     name: user.name,
     avatarUrl: user.avatarUrl,
+    currency: user.currency,
     createdAt: user.createdAt,
     accounts: user.accounts.map((a) => ({ id: a.id, name: a.name, accountNumber: a.accountNumber })),
   };
@@ -25,7 +26,7 @@ export async function updateProfile(userId: string, input: UpdateProfileInput) {
     where: { id: userId },
     data: input,
   });
-  return { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl };
+  return { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl, currency: user.currency };
 }
 
 export async function changePassword(userId: string, currentPassword: string, newPassword: string) {

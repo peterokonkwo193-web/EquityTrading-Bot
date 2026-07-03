@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const profileSchema = z.object({
   name: z.string().min(1, "Name is required").max(100, "Name is too long"),
+  currency: z.enum(["USD", "GBP", "EUR"]),
 });
 
 export type ProfileFormInput = z.infer<typeof profileSchema>;

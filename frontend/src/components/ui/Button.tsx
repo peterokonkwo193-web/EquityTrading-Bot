@@ -5,7 +5,7 @@ import { motion, HTMLMotionProps } from "framer-motion";
 import clsx from "clsx";
 import { Spinner } from "./Spinner";
 
-type Variant = "primary" | "secondary" | "danger" | "ghost";
+type Variant = "primary" | "gold" | "secondary" | "danger" | "ghost";
 
 interface ButtonProps extends Omit<HTMLMotionProps<"button">, "ref" | "children"> {
   variant?: Variant;
@@ -15,7 +15,8 @@ interface ButtonProps extends Omit<HTMLMotionProps<"button">, "ref" | "children"
 
 const VARIANT_CLASSES: Record<Variant, string> = {
   primary: "bg-primary text-white hover:bg-primary-hover",
-  secondary: "bg-card border border-card-border text-text-primary hover:border-text-muted",
+  gold: "bg-gold text-black hover:bg-gold-hover font-semibold",
+  secondary: "glass text-text-primary hover:border-white/20",
   danger: "bg-danger text-white hover:bg-danger/90",
   ghost: "bg-transparent text-text-secondary hover:text-text-primary",
 };

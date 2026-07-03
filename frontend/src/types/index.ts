@@ -1,8 +1,12 @@
+export type Currency = "USD" | "GBP" | "EUR";
+
 export interface User {
   id: string;
   email: string;
   name: string;
   avatarUrl: string | null;
+  currency: Currency;
+  emailVerified: boolean;
   createdAt?: string;
 }
 
@@ -20,29 +24,34 @@ export interface Account {
   updatedAt: string;
 }
 
-export type BotStatus = "STOPPED" | "RUNNING" | "PAUSED" | "ERROR";
+export type AssetClass = "CRYPTO" | "FOREX";
+export type TradeDirection = "BUY" | "SELL";
+export type TradeStatus = "OPEN" | "CLOSED";
 
-export interface TradingBot {
+export interface SimulatedTrade {
   id: string;
   accountId: string;
-  status: BotStatus;
+  market: string;
+  assetClass: AssetClass;
+  direction: TradeDirection;
+  amount: string;
+  profitLoss: string;
+  status: TradeStatus;
+  durationSeconds: number;
+  openedAt: string;
+  closesAt: string;
+  closedAt: string | null;
+  createdAt: string;
+}
+
+export interface TradingStats {
+  id: string;
+  accountId: string;
   totalPnl: string;
   todayPnl: string;
   tradesCount: number;
-  winRate: string;
-  startedAt: string | null;
-  lastTickAt: string | null;
-  errorMessage: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface BotActivity {
-  id: string;
-  botId: string;
-  message: string;
-  pnlDelta: string;
-  createdAt: string;
+  winCount: number;
+  winRate: number;
 }
 
 export type DepositStatus = "PENDING" | "COMPLETED" | "FAILED";
@@ -52,32 +61,21 @@ export interface Deposit {
   accountId: string;
   amount: string;
   currency: string;
-  method: string;
   status: DepositStatus;
   createdAt: string;
 }
 
-export type WithdrawalStatus = "PENDING" | "COMPLETED" | "FAILED";
-
-export interface Withdrawal {
-  id: string;
-  accountId: string;
-  amount: string;
-  destination: string;
-  status: WithdrawalStatus;
-  createdAt: string;
+export interface Wallet {
+  balance: string;
+  currency: string;
+  fundingHistory: Deposit[];
 }
 
-export type NotificationType = "INFO" | "SUCCESS" | "WARNING" | "ERROR";
-
-export interface Notification {
-  id: string;
-  userId: string;
-  type: NotificationType;
-  title: string;
-  message: string;
-  read: boolean;
-  createdAt: string;
+export interface TickerEntry {
+  symbol: string;
+  assetClass: AssetClass;
+  price: number;
+  changePct: number;
 }
 
 export interface Settings {
@@ -85,7 +83,7 @@ export interface Settings {
   userId: string;
   emailNotifications: boolean;
   pushNotifications: boolean;
-  botAlerts: boolean;
+  tradeAlerts: boolean;
 }
 
 export interface ApiSuccess<T> {

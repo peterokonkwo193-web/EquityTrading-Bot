@@ -1,25 +1,40 @@
 import { apiRequest } from "./apiClient";
 import {
   Account,
-  BotActivity,
-  Deposit,
-  Notification,
+  Currency,
   Settings,
-  TradingBot,
+  SimulatedTrade,
+  TickerEntry,
+  TradingStats,
   User,
-  Withdrawal,
+  Wallet,
 } from "@/types";
 
 // Auth
-export const loginUser = (email: string, password: string) =>
-  apiRequest<{ token: string; user: User }>("/auth/login", { method: "POST", body: { email, password } });
+export const registerUser = (input: { name: string; email: string; password: string; currency: Currency }) =>
+  apiRequest<{ user: User; verificationCode: string }>("/auth/register", { method: "POST", body: input });
+
+export const verifyEmail = (email: string, code: string) =>
+  apiRequest<User>("/auth/verify-email", { method: "POST", body: { email, code } });
+
+export const loginUser = (email: string, password: string, rememberMe: boolean) =>
+  apiRequest<{ token: string; user: User }>("/auth/login", {
+    method: "POST",
+    body: { email, password, rememberMe },
+  });
 
 export const logoutUser = () => apiRequest<{ message: string }>("/auth/logout", { method: "POST" });
 
 export const fetchMe = () => apiRequest<User>("/auth/me");
 
+export const forgotPassword = (email: string) =>
+  apiRequest<{ resetToken: string | null }>("/auth/forgot-password", { method: "POST", body: { email } });
+
+export const resetPassword = (input: { email: string; token: string; newPassword: string }) =>
+  apiRequest<{ message: string }>("/auth/reset-password", { method: "POST", body: input });
+
 // Profile
-export const updateProfile = (input: { name?: string; avatarUrl?: string | null }) =>
+export const updateProfile = (input: { name?: string; avatarUrl?: string | null; currency?: Currency }) =>
   apiRequest<User>("/users/me", { method: "PATCH", body: input });
 
 export const changePassword = (input: { currentPassword: string; newPassword: string }) =>
@@ -29,36 +44,29 @@ export const changePassword = (input: { currentPassword: string; newPassword: st
 export const fetchAccounts = () => apiRequest<Account[]>("/accounts");
 export const fetchAccount = (accountId: string) => apiRequest<Account>(`/accounts/${accountId}`);
 
-// Bot
-export const fetchBot = (accountId: string) => apiRequest<TradingBot>(`/accounts/${accountId}/bot`);
-export const startBot = (accountId: string) =>
-  apiRequest<TradingBot>(`/accounts/${accountId}/bot/start`, { method: "POST" });
-export const pauseBot = (accountId: string) =>
-  apiRequest<TradingBot>(`/accounts/${accountId}/bot/pause`, { method: "POST" });
-export const stopBot = (accountId: string) =>
-  apiRequest<TradingBot>(`/accounts/${accountId}/bot/stop`, { method: "POST" });
-export const fetchBotActivity = (accountId: string, limit = 20) =>
-  apiRequest<BotActivity[]>(`/accounts/${accountId}/bot/activity?limit=${limit}`);
+// Trades (simulated)
+export const fetchActiveTrade = (accountId: string) =>
+  apiRequest<SimulatedTrade | null>(`/accounts/${accountId}/trades/active`);
+export const startTrade = (accountId: string, input: { market: string; assetClass: string; amount: number }) =>
+  apiRequest<SimulatedTrade>(`/accounts/${accountId}/trades`, { method: "POST", body: input });
+export const fetchTradeHistory = (accountId: string, limit = 50) =>
+  apiRequest<SimulatedTrade[]>(`/accounts/${accountId}/trades?limit=${limit}`);
+export const fetchTradingStats = (accountId: string) =>
+  apiRequest<TradingStats>(`/accounts/${accountId}/trades/stats`);
 
-// Deposits
-export const fetchDeposits = (accountId: string) => apiRequest<Deposit[]>(`/accounts/${accountId}/deposits`);
-export const createDeposit = (accountId: string, input: { amount: number; currency: string; method: string }) =>
-  apiRequest<Deposit>(`/accounts/${accountId}/deposits`, { method: "POST", body: input });
+// Wallet
+export const fetchWallet = (accountId: string) => apiRequest<Wallet>(`/accounts/${accountId}/wallet`);
+export const addVirtualFunds = (accountId: string, input: { amount: number; currency: string }) =>
+  apiRequest<Wallet["fundingHistory"][number]>(`/accounts/${accountId}/wallet/add-funds`, {
+    method: "POST",
+    body: input,
+  });
 
-// Withdrawals
-export const fetchWithdrawals = (accountId: string) =>
-  apiRequest<Withdrawal[]>(`/accounts/${accountId}/withdrawals`);
-export const createWithdrawal = (accountId: string, input: { amount: number; destination: string }) =>
-  apiRequest<Withdrawal>(`/accounts/${accountId}/withdrawals`, { method: "POST", body: input });
-
-// Notifications
-export const fetchNotifications = () => apiRequest<Notification[]>("/notifications");
-export const markNotificationRead = (id: string) =>
-  apiRequest<{ message: string }>(`/notifications/${id}/read`, { method: "PATCH" });
-export const markAllNotificationsRead = () =>
-  apiRequest<{ message: string }>("/notifications/read-all", { method: "PATCH" });
+// Ticker
+export const fetchTicker = () => apiRequest<TickerEntry[]>("/ticker");
 
 // Settings
 export const fetchSettings = () => apiRequest<Settings>("/settings");
-export const updateSettings = (input: Partial<Pick<Settings, "emailNotifications" | "pushNotifications" | "botAlerts">>) =>
-  apiRequest<Settings>("/settings", { method: "PATCH", body: input });
+export const updateSettings = (
+  input: Partial<Pick<Settings, "emailNotifications" | "pushNotifications" | "tradeAlerts">>
+) => apiRequest<Settings>("/settings", { method: "PATCH", body: input });

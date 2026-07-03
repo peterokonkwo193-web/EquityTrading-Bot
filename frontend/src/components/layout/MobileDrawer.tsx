@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
-import { Bot as LogoIcon, LogOut, X } from "lucide-react";
+import { TrendingUp as LogoIcon, LogOut, X } from "lucide-react";
 import { NAV_ITEMS } from "./navItems";
 
 interface MobileDrawerProps {
@@ -32,12 +32,12 @@ export function MobileDrawer({ isOpen, onClose, onLogoutClick }: MobileDrawerPro
             exit={{ x: -280 }}
             transition={{ duration: 0.2 }}
             onClick={(e) => e.stopPropagation()}
-            className="flex h-full w-64 flex-col border-r border-card-border bg-background-elevated"
+            className="flex h-full w-64 flex-col border-r border-white/10 bg-black"
           >
             <div className="flex items-center justify-between px-6 py-6">
               <div className="flex items-center gap-2">
-                <LogoIcon className="h-6 w-6 text-primary" />
-                <span className="text-lg font-semibold text-text-primary">TradeBot</span>
+                <LogoIcon className="h-6 w-6 text-gold" />
+                <span className="text-lg font-semibold text-text-primary">Equity Bot</span>
               </div>
               <button onClick={onClose} aria-label="Close menu" className="text-text-muted hover:text-text-primary">
                 <X className="h-5 w-5" />
@@ -65,7 +65,7 @@ export function MobileDrawer({ isOpen, onClose, onLogoutClick }: MobileDrawerPro
               })}
             </nav>
 
-            <div className="border-t border-card-border p-3">
+            <div className="border-t border-white/10 p-3">
               <button
                 onClick={() => {
                   onClose();

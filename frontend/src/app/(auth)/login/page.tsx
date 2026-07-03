@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { Bot, Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
+import { TrendingUp, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { StatusBanner } from "@/components/status/StatusBanner";
 import { useAuth } from "@/context/AuthContext";
-import { useToast } from "@/components/toast/ToastProvider";
+import { useStatus } from "@/hooks/useStatus";
 import { loginSchema, LoginFormInput } from "@/lib/validators/auth";
 import { ApiError } from "@/lib/apiClient";
 import { FullPageLoader } from "@/components/layout/FullPageLoader";
@@ -16,9 +18,9 @@ import { FullPageLoader } from "@/components/layout/FullPageLoader";
 export default function LoginPage() {
   const { user, isLoading: isAuthLoading, login } = useAuth();
   const router = useRouter();
-  const toast = useToast();
+  const status = useStatus();
   const [showPassword, setShowPassword] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(true);
 
   const {
     register,
@@ -40,25 +42,25 @@ export default function LoginPage() {
   }
 
   const onSubmit = async (values: LoginFormInput) => {
-    setServerError(null);
+    status.clear();
     try {
-      await login(values.email, values.password);
-      toast.success("Logged in successfully");
+      await login(values.email, values.password, rememberMe);
       router.replace("/dashboard");
     } catch (err) {
       const message = err instanceof ApiError ? err.message : "Login failed. Please try again.";
-      setServerError(message);
-      toast.error(message);
+      status.error(message);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md rounded-2xl border border-card-border bg-card p-8 shadow-card">
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="glass w-full max-w-md rounded-2xl p-8 shadow-card">
         <div className="mb-8 flex flex-col items-center gap-2">
-          <Bot className="h-10 w-10 text-primary" />
-          <h1 className="text-xl font-semibold text-text-primary">Welcome back</h1>
-          <p className="text-sm text-text-secondary">Sign in to manage your trading bot</p>
+          <TrendingUp className="h-10 w-10 text-gold" />
+          <h1 className="text-xl font-semibold text-text-primary">Equity Trading Bot</h1>
+          <p className="text-center text-sm text-text-secondary">
+            Sign in to your simulated trading account
+          </p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
@@ -89,15 +91,33 @@ export default function LoginPage() {
             {...register("password")}
           />
 
-          {serverError && <p className="text-sm text-danger">{serverError}</p>}
+          <div className="flex items-center justify-between text-sm">
+            <label className="flex items-center gap-2 text-text-secondary">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 rounded border-white/20 bg-white/5 accent-primary"
+              />
+              Remember me
+            </label>
+            <Link href="/forgot-password" className="text-primary hover:text-primary-hover">
+              Forgot password?
+            </Link>
+          </div>
+
+          <StatusBanner status={status.status} />
 
           <Button type="submit" className="mt-2 w-full" isLoading={isSubmitting} disabled={!isValid}>
             Log in
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-text-muted">
-          Demo login: demo@bottrading.dev / Demo1234!
+        <p className="mt-6 text-center text-sm text-text-muted">
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="text-primary hover:text-primary-hover">
+            Create one
+          </Link>
         </p>
       </div>
     </div>

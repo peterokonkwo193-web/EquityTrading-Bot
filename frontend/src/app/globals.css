@@ -1,28 +1,29 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #0b1120;
-  --color-background-elevated: #111827;
+  --color-background: #000000;
 
-  --color-card: #161d2e;
-  --color-card-border: #232b3d;
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-muted: #1d3a66;
 
-  --color-primary: #10b981;
-  --color-primary-hover: #0ea371;
-  --color-primary-muted: #064e3b;
+  --color-gold: #d4af37;
+  --color-gold-hover: #c49a2a;
+  --color-gold-muted: #4a3c16;
 
   --color-danger: #ef4444;
-  --color-danger-muted: #7f1d1d;
+  --color-danger-muted: #4a1616;
 
   --color-warning: #f59e0b;
-  --color-warning-muted: #78350f;
+  --color-warning-muted: #4a3410;
 
   --color-text-primary: #f9fafb;
   --color-text-secondary: #9ca3af;
   --color-text-muted: #6b7280;
 
-  --shadow-card: 0 4px 24px -8px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 0 1px rgba(16, 185, 129, 0.15), 0 8px 24px -8px rgba(16, 185, 129, 0.25);
+  --shadow-card: 0 4px 30px -8px rgba(0, 0, 0, 0.7);
+  --shadow-glow-blue: 0 0 0 1px rgba(59, 130, 246, 0.2), 0 8px 30px -8px rgba(59, 130, 246, 0.35);
+  --shadow-glow-gold: 0 0 0 1px rgba(212, 175, 55, 0.25), 0 8px 30px -8px rgba(212, 175, 55, 0.3);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -35,8 +36,27 @@ html {
 body {
   background: var(--color-background);
   color: var(--color-text-primary);
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 900px 500px at 15% 0%, rgba(59, 130, 246, 0.12), transparent 60%),
+    radial-gradient(ellipse 900px 500px at 100% 20%, rgba(212, 175, 55, 0.08), transparent 60%);
+  pointer-events: none;
 }
 
 * {
-  scrollbar-color: var(--color-card-border) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
