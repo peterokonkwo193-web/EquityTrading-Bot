@@ -3,8 +3,9 @@
     { "src": "frontend/package.json", "use": "@vercel/next" },
     { "src": "backend/api/index.ts", "use": "@vercel/node" }
   ],
-  "rewrites": [
-    { "source": "/api/v1/:path*", "destination": "/backend/api/index" },
-    { "source": "/health", "destination": "/backend/api/index" }
+  "routes": [
+    { "src": "/api/v1/(.*)", "dest": "backend/api/index.ts" },
+    { "src": "/health", "dest": "backend/api/index.ts" },
+    { "src": "/(.*)", "dest": "frontend/$1" }
   ]
 }
