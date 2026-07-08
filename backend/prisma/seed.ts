@@ -33,7 +33,7 @@ async function main() {
   await prisma.account.create({
     data: {
       userId: admin.id,
-      name: "Admin Sandbox Account",
+      name: "Main Account",
       accountNumber: `SIM-${num}`,
       balance: 100000.00,
       currency: "USD",
@@ -41,7 +41,7 @@ async function main() {
     }
   });
 
-  console.log("Admin user seeded successfully with email: admin@equitybot.com");
+  console.log(`Admin user seeded successfully with email: ${adminEmail}`);
 }
 
 main()
