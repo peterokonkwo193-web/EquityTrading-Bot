@@ -2,14 +2,15 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { User } from "@/types";
-import { fetchMe, loginUser, logoutUser } from "@/lib/endpoints";
+import { Currency, User } from "@/types";
+import { fetchMe, loginUser, logoutUser, registerUser } from "@/lib/endpoints";
 import { ApiError } from "@/lib/apiClient";
 
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string, rememberMe: boolean) => Promise<void>;
+  register: (name: string, email: string, password: string, currency: Currency) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: User) => void;
 }
@@ -48,6 +49,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const register = useCallback(
+    async (name: string, email: string, password: string, currency: Currency) => {
+      try {
+        const { user, token } = await registerUser({ name, email, password, currency });
+        if (typeof window !== "undefined") {
+          localStorage.setItem("auth_token", token);
+        }
+        setUser(user);
+      } catch (err) {
+        if (err instanceof ApiError) throw err;
+        throw new ApiError("Unable to register. Please try again.", 0);
+      }
+    },
+    []
+  );
+
   const logout = useCallback(async () => {
     try {
       await logoutUser();
@@ -62,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, setUser }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, setUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -7,12 +7,7 @@ import { logger } from "../../lib/logger";
 import { createDefaultAccount } from "../accounts/account.service";
 import { RegisterInput } from "./auth.schema";
 
-const VERIFICATION_CODE_TTL_MS = 15 * 60 * 1000;
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
-
-function generateVerificationCode() {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
 
 function toPublicUser(user: {
   id: string;
@@ -41,7 +36,6 @@ export async function registerUser(input: RegisterInput) {
   }
 
   const passwordHash = await hashPassword(input.password);
-  const verificationCode = generateVerificationCode();
 
   const user = await prisma.user.create({
     data: {
@@ -49,17 +43,16 @@ export async function registerUser(input: RegisterInput) {
       passwordHash,
       name: input.name,
       currency: input.currency,
-      verificationCode,
-      verificationExpiresAt: new Date(Date.now() + VERIFICATION_CODE_TTL_MS),
+      emailVerified: true,
       settings: { create: {} },
     },
   });
 
   await createDefaultAccount(user.id, input.currency);
 
-  logger.info(`[simulated email] Verification code for ${user.email}: ${verificationCode}`);
+  const token = signAccessToken({ userId: user.id, email: user.email, role: user.role });
 
-  return { user: toPublicUser(user), verificationCode };
+  return { user: toPublicUser(user), token };
 }
 
 export async function verifyEmail(email: string, code: string) {

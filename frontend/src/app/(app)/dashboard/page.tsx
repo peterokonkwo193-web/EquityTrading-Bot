@@ -52,11 +52,13 @@ export default function DashboardPage() {
 
   const firstName = user?.name.split(" ")[0] ?? "there";
   const currency = selectedAccount?.currency ?? "USD";
+  const hour = new Date().getHours();
+  const timeGreeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="text-2xl font-semibold text-text-primary">Welcome back, {firstName}</h2>
+        <h2 className="text-2xl font-semibold text-text-primary">{timeGreeting}, {firstName}</h2>
         <p className="text-sm text-text-secondary">
           Live trading dashboard — monitor markets and manage your trades.
         </p>
