@@ -10,7 +10,8 @@ import { SimulatedTrade } from "@/types";
 import { formatCurrency } from "@/lib/currency";
 import { SummaryCard } from "@/components/dashboard/SummaryCard";
 import { PriceTicker } from "@/components/dashboard/PriceTicker";
-import { SecurityBadges } from "@/components/dashboard/SecurityBadges";
+import { LiveMarketChart } from "@/components/dashboard/LiveMarketChart";
+import { Testimonials } from "@/components/dashboard/Testimonials";
 import { LineAreaChart, LineAreaChartPoint } from "@/components/charts/LineAreaChart";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -57,7 +58,7 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-2xl font-semibold text-text-primary">Welcome back, {firstName}</h2>
         <p className="text-sm text-text-secondary">
-          Simulated trading dashboard — paper trading only, no real funds at risk.
+          Live trading dashboard — monitor markets and manage your trades.
         </p>
       </div>
 
@@ -104,14 +105,18 @@ export default function DashboardPage() {
         <h3 className="mb-4 text-sm font-semibold text-text-secondary">Performance Chart</h3>
         {performance.length === 0 ? (
           <p className="py-8 text-center text-sm text-text-muted">
-            No simulated trades yet. Start a trade to see your performance curve.
+            No trades yet. Start a trade to see your performance curve.
           </p>
         ) : (
           <LineAreaChart data={performance} color="gold" valuePrefix={currency === "USD" ? "$" : ""} />
         )}
       </Card>
 
-      <SecurityBadges />
+      {/* Live Market Chart */}
+      <LiveMarketChart />
+
+      {/* Testimonials */}
+      <Testimonials />
     </div>
   );
 }

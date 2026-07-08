@@ -21,11 +21,17 @@ interface RequestOptions {
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   let response: Response;
+  // Read token from localStorage for cross-origin Bearer auth fallback
+  const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+  const headers: Record<string, string> = {};
+  if (options.body) headers["Content-Type"] = "application/json";
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
   try {
     response = await fetch(`${API_URL}${path}`, {
       method: options.method ?? "GET",
       credentials: "include",
-      headers: options.body ? { "Content-Type": "application/json" } : undefined,
+      headers: Object.keys(headers).length ? headers : undefined,
       body: options.body ? JSON.stringify(options.body) : undefined,
     });
   } catch {

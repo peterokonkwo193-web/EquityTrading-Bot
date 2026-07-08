@@ -54,10 +54,15 @@ export function Topbar({ onMenuClick, onLogoutClick, onAccountSwitchClick }: Top
       <div className="flex items-center gap-2 md:gap-4">
         <button
           onClick={onAccountSwitchClick}
-          className="glass hidden items-center gap-2 rounded-xl px-3 py-2 text-sm text-text-secondary hover:text-text-primary sm:flex"
+          className="glass flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs text-text-secondary hover:text-text-primary border border-white/10"
         >
-          <Wallet className="h-4 w-4" />
-          {selectedAccount ? selectedAccount.name : "Select account"}
+          <Wallet className="h-3.5 w-3.5 shrink-0" />
+          <span className="hidden sm:inline">
+            {selectedAccount ? selectedAccount.name : "Select account"}
+          </span>
+          <span className="sm:hidden text-[10px]">
+            {selectedAccount ? selectedAccount.name.split(" ")[0] : "Select"}
+          </span>
         </button>
 
         <div ref={profileRef} className="relative">

@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Equity Trading Bot",
-  description: "Simulated trading dashboard — paper trading only, no real broker or exchange connections",
+  title: "Equity Trading Console",
+  description: "Premium AI Auto-Trading Dashboard & Analytics Console",
 };
 
 export default function RootLayout({

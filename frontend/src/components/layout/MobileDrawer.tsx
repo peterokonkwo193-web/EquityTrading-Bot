@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
-import { TrendingUp as LogoIcon, LogOut, X } from "lucide-react";
+import { TrendingUp as LogoIcon, LogOut, X, Shield } from "lucide-react";
 import { NAV_ITEMS } from "./navItems";
+import { useAuth } from "@/context/AuthContext";
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -15,6 +16,12 @@ interface MobileDrawerProps {
 
 export function MobileDrawer({ isOpen, onClose, onLogoutClick }: MobileDrawerProps) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  
+  const menuItems = [...NAV_ITEMS];
+  if (user?.role === "ADMIN") {
+    menuItems.push({ href: "/admin", label: "Admin Panel", icon: Shield });
+  }
 
   return (
     <AnimatePresence>
@@ -45,18 +52,38 @@ export function MobileDrawer({ isOpen, onClose, onLogoutClick }: MobileDrawerPro
             </div>
 
             <nav className="flex flex-1 flex-col gap-1 px-3">
-              {NAV_ITEMS.map((item) => {
-                const isActive = pathname.startsWith(item.href);
+              {menuItems.map((item) => {
+                const isExternal = item.href.startsWith("http");
+                const isActive = !isExternal && pathname.startsWith(item.href);
                 const Icon = item.icon;
+
+                const classes = clsx(
+                  "flex items-center gap-3 rounded-xl px-3 py-3 text-base font-medium transition-colors",
+                  isActive ? "bg-primary-muted/40 text-primary" : "text-text-secondary hover:text-text-primary"
+                );
+
+                if (isExternal) {
+                  return (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={onClose}
+                      className={classes}
+                    >
+                      <Icon className="h-5 w-5" />
+                      {item.label}
+                    </a>
+                  );
+                }
+
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     onClick={onClose}
-                    className={clsx(
-                      "flex items-center gap-3 rounded-xl px-3 py-3 text-base font-medium transition-colors",
-                      isActive ? "bg-primary-muted/40 text-primary" : "text-text-secondary hover:text-text-primary"
-                    )}
+                    className={classes}
                   >
                     <Icon className="h-5 w-5" />
                     {item.label}

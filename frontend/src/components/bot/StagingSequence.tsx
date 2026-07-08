@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 
-const STAGES = ["Initializing...", "Scanning Market...", "Finding Opportunity...", "Executing Simulated Trade..."];
+const STAGES = ["Initializing...", "Scanning Market...", "Finding Opportunity...", "Executing Trade Position..."];
 const STAGE_DURATION_MS = 700;
 
 export function StagingSequence({ onComplete }: { onComplete: () => void }) {

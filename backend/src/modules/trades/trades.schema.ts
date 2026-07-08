@@ -11,3 +11,11 @@ export const startTradeSchema = z.object({
 });
 
 export type StartTradeInput = z.infer<typeof startTradeSchema>;
+
+/** Used by the bot simulator to settle a completed local trade cycle */
+export const settleBotTradeSchema = z.object({
+  profitLoss: z.number(),
+  note: z.string().max(200).optional(),
+});
+
+export type SettleBotTradeInput = z.infer<typeof settleBotTradeSchema>;

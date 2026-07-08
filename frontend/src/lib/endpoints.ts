@@ -8,6 +8,9 @@ import {
   TradingStats,
   User,
   Wallet,
+  WalletTransaction,
+  AuditLog,
+  ExchangeConnection,
 } from "@/types";
 
 // Auth
@@ -53,14 +56,81 @@ export const fetchTradeHistory = (accountId: string, limit = 50) =>
   apiRequest<SimulatedTrade[]>(`/accounts/${accountId}/trades?limit=${limit}`);
 export const fetchTradingStats = (accountId: string) =>
   apiRequest<TradingStats>(`/accounts/${accountId}/trades/stats`);
-
-// Wallet
-export const fetchWallet = (accountId: string) => apiRequest<Wallet>(`/accounts/${accountId}/wallet`);
-export const addVirtualFunds = (accountId: string, input: { amount: number; currency: string }) =>
-  apiRequest<Wallet["fundingHistory"][number]>(`/accounts/${accountId}/wallet/add-funds`, {
+export const settleBotTrade = (accountId: string, input: { profitLoss: number; note?: string }) =>
+  apiRequest<{ balance: string; profitLoss: string }>(`/accounts/${accountId}/trades/settle`, {
     method: "POST",
     body: input,
   });
+
+// Wallet
+export const fetchWallet = (accountId: string) => apiRequest<Wallet>(`/accounts/${accountId}/wallet`);
+
+export const requestDeposit = (
+  accountId: string,
+  input: { amount: number; asset: string; network: string; paymentProof?: string }
+) =>
+  apiRequest<WalletTransaction>(`/accounts/${accountId}/wallet/deposit`, {
+    method: "POST",
+    body: input,
+  });
+
+
+export const requestWithdrawal = (
+  accountId: string,
+  input: { amount: number; asset: string; network: string; destinationAddress: string }
+) =>
+  apiRequest<WalletTransaction>(`/accounts/${accountId}/wallet/withdraw`, {
+    method: "POST",
+    body: input,
+  });
+
+// Exchange Connection
+export const connectExchange = (
+  accountId: string,
+  input: { exchange: string; apiKey: string; apiSecret: string }
+) =>
+  apiRequest<ExchangeConnection>(`/accounts/${accountId}/exchange`, {
+    method: "POST",
+    body: input,
+  });
+
+export const fetchExchangeConnection = (accountId: string) =>
+  apiRequest<ExchangeConnection | null>(`/accounts/${accountId}/exchange`);
+
+export const disconnectExchange = (accountId: string) =>
+  apiRequest<{ success: boolean }>(`/accounts/${accountId}/exchange`, {
+    method: "DELETE",
+  });
+
+// Admin
+export const fetchAdminUsers = (search?: string) =>
+  apiRequest<unknown[]>(`/admin/users${search ? `?search=${encodeURIComponent(search)}` : ""}`);
+
+export const fetchAdminUserDetail = (userId: string) =>
+  apiRequest<unknown>(`/admin/users/${userId}`);
+
+export const fetchAdminTransactions = () =>
+  apiRequest<unknown[]>(`/admin/transactions`);
+
+export const reviewAdminTransaction = (txId: string, status: "APPROVED" | "REJECTED") =>
+  apiRequest<unknown>(`/admin/transactions/${txId}/review`, {
+    method: "POST",
+    body: { status },
+  });
+
+export const fetchAdminAuditLogs = () =>
+  apiRequest<AuditLog[]>(`/admin/audit-logs`);
+
+export const adjustUserBalance = (
+  userId: string,
+  accountId: string,
+  input: { amount: number; note?: string }
+) =>
+  apiRequest<unknown>(`/admin/users/${userId}/accounts/${accountId}/adjust-balance`, {
+    method: "POST",
+    body: input,
+  });
+
 
 // Ticker
 export const fetchTicker = () => apiRequest<TickerEntry[]>("/ticker");

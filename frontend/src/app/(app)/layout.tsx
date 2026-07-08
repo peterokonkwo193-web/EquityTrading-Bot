@@ -11,6 +11,7 @@ import { PageTransition } from "@/components/layout/PageTransition";
 import { FullPageLoader } from "@/components/layout/FullPageLoader";
 import { LogoutConfirmModal } from "@/components/modals/LogoutConfirmModal";
 import { AccountSelectionModal } from "@/components/modals/AccountSelectionModal";
+import { AiSupportWidget } from "@/components/layout/AiSupportWidget";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -52,6 +53,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <LogoutConfirmModal isOpen={isLogoutModalOpen} onClose={() => setIsLogoutModalOpen(false)} />
       <AccountSelectionModal isOpen={isAccountModalOpen} onClose={() => setIsAccountModalOpen(false)} />
+      <AiSupportWidget />
     </AccountProvider>
   );
 }

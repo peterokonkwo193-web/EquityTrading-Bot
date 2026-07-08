@@ -21,6 +21,7 @@ function toPublicUser(user: {
   avatarUrl: string | null;
   currency: string;
   emailVerified: boolean;
+  role: "USER" | "ADMIN";
 }) {
   return {
     id: user.id,
@@ -29,6 +30,7 @@ function toPublicUser(user: {
     avatarUrl: user.avatarUrl,
     currency: user.currency,
     emailVerified: user.emailVerified,
+    role: user.role,
   };
 }
 
@@ -92,7 +94,7 @@ export async function loginUser(email: string, password: string) {
     throw new AppError("Invalid email or password", 401);
   }
 
-  const token = signAccessToken({ userId: user.id, email: user.email });
+  const token = signAccessToken({ userId: user.id, email: user.email, role: user.role });
 
   return { token, user: toPublicUser(user) };
 }

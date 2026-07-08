@@ -5,12 +5,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import clsx from "clsx";
-import { TrendingUp, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { TrendingUp, LogOut, ChevronLeft, ChevronRight, Shield } from "lucide-react";
 import { NAV_ITEMS } from "./navItems";
+import { useAuth } from "@/context/AuthContext";
 
 export function Sidebar({ onLogoutClick }: { onLogoutClick: () => void }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+
+  const { user } = useAuth();
+  const menuItems = [...NAV_ITEMS];
+  if (user?.role === "ADMIN") {
+    menuItems.push({ href: "/admin", label: "Admin Panel", icon: Shield });
+  }
 
   return (
     <aside
@@ -33,11 +40,13 @@ export function Sidebar({ onLogoutClick }: { onLogoutClick: () => void }) {
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 px-3">
-        {NAV_ITEMS.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+        {menuItems.map((item) => {
+          const isExternal = item.href.startsWith("http");
+          const isActive = !isExternal && pathname.startsWith(item.href);
           const Icon = item.icon;
-          return (
-            <Link key={item.href} href={item.href} className="relative" title={collapsed ? item.label : undefined}>
+
+          const content = (
+            <>
               {isActive && (
                 <motion.div
                   layoutId="sidebar-active"
@@ -54,6 +63,27 @@ export function Sidebar({ onLogoutClick }: { onLogoutClick: () => void }) {
                 <Icon className="h-5 w-5 shrink-0" />
                 {!collapsed && item.label}
               </div>
+            </>
+          );
+
+          if (isExternal) {
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative block"
+                title={collapsed ? item.label : undefined}
+              >
+                {content}
+              </a>
+            );
+          }
+
+          return (
+            <Link key={item.href} href={item.href} className="relative block" title={collapsed ? item.label : undefined}>
+              {content}
             </Link>
           );
         })}

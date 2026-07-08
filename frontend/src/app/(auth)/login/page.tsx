@@ -57,9 +57,9 @@ export default function LoginPage() {
       <div className="glass w-full max-w-md rounded-2xl p-8 shadow-card">
         <div className="mb-8 flex flex-col items-center gap-2">
           <TrendingUp className="h-10 w-10 text-gold" />
-          <h1 className="text-xl font-semibold text-text-primary">Equity Trading Bot</h1>
+          <h1 className="text-xl font-semibold text-text-primary">Equity Trading Platform</h1>
           <p className="text-center text-sm text-text-secondary">
-            Sign in to your simulated trading account
+            Sign in to your trading account
           </p>
         </div>
 

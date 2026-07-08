@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { TradingStats } from "@/types";
 import { fetchTradingStats } from "@/lib/endpoints";
 
@@ -7,6 +7,14 @@ const POLL_INTERVAL_MS = 5000;
 export function useTradingStats(accountId: string | null) {
   const [stats, setStats] = useState<TradingStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const refreshStats = useCallback(async () => {
+    if (!accountId) return;
+    try {
+      const data = await fetchTradingStats(accountId);
+      setStats(data);
+    } catch {}
+  }, [accountId]);
 
   useEffect(() => {
     if (!accountId) {
@@ -37,5 +45,6 @@ export function useTradingStats(accountId: string | null) {
     };
   }, [accountId]);
 
-  return { stats, isLoading, setStats };
+  return { stats, isLoading, setStats, refreshStats };
 }
+

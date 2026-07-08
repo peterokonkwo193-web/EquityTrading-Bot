@@ -1,5 +1,7 @@
 export type Currency = "USD" | "GBP" | "EUR";
 
+export type UserRole = "USER" | "ADMIN";
+
 export interface User {
   id: string;
   email: string;
@@ -7,6 +9,7 @@ export interface User {
   avatarUrl: string | null;
   currency: Currency;
   emailVerified: boolean;
+  role: UserRole;
   createdAt?: string;
 }
 
@@ -54,21 +57,48 @@ export interface TradingStats {
   winRate: number;
 }
 
-export type DepositStatus = "PENDING" | "COMPLETED" | "FAILED";
-
-export interface Deposit {
+export interface WalletTransaction {
   id: string;
   accountId: string;
+  type: "DEPOSIT" | "WITHDRAWAL";
+  asset: string;
+  network: string;
   amount: string;
-  currency: string;
-  status: DepositStatus;
+  fiatAmount: string;
+  destinationAddress: string | null;
+  txHash: string | null;
+  status: "PENDING" | "APPROVED" | "REJECTED";
   createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExchangeConnection {
+  id: string;
+  exchange: string;
+  apiKeyMasked: string;
+}
+
+export interface AuditLog {
+  id: string;
+  administratorId: string;
+  action: string;
+  details: string;
+  timestamp: string;
+  administrator: {
+    id: string;
+    name: string;
+    email: string;
+  };
 }
 
 export interface Wallet {
   balance: string;
   currency: string;
-  fundingHistory: Deposit[];
+  totalDeposits: string;
+  totalWithdrawals: string;
+  pendingDeposits: string;
+  pendingWithdrawals: string;
+  fundingHistory: WalletTransaction[];
 }
 
 export interface TickerEntry {

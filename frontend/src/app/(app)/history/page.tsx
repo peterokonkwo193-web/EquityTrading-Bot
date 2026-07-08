@@ -113,7 +113,7 @@ export default function HistoryPage() {
             ))}
           </div>
         ) : trades.length === 0 ? (
-          <p className="text-sm text-text-muted">No simulated trades yet.</p>
+          <p className="text-sm text-text-muted">No trades recorded yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-left text-sm">

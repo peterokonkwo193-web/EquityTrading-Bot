@@ -68,8 +68,8 @@ export default function ResetPasswordPage() {
         </div>
 
         {simulatedToken && (
-          <div className="mb-4 rounded-xl border border-gold/30 bg-gold-muted/30 p-3 text-center text-sm text-gold">
-            Simulated email — your reset code is <span className="font-semibold">{simulatedToken}</span>
+          <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-center text-sm text-text-secondary">
+            Security bypass token (Development Mode): <span className="font-semibold text-text-primary">{simulatedToken}</span>
           </div>
         )}
 

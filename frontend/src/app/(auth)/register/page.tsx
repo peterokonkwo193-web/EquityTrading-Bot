@@ -14,7 +14,6 @@ import { registerSchema, RegisterFormInput } from "@/lib/validators/register";
 import { registerUser } from "@/lib/endpoints";
 import { ApiError } from "@/lib/apiClient";
 
-const CURRENCIES = ["USD", "GBP", "EUR"] as const;
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -58,7 +57,7 @@ export default function RegisterPage() {
           <TrendingUp className="h-10 w-10 text-gold" />
           <h1 className="text-xl font-semibold text-text-primary">Create your account</h1>
           <p className="text-center text-sm text-text-secondary">
-            Simulated paper-trading only — no real broker or exchange connection
+            Join the premium auto-trading console
           </p>
         </div>
 
@@ -102,11 +101,9 @@ export default function RegisterPage() {
               className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
               {...register("currency")}
             >
-              {CURRENCIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
+              <option value="USD" className="bg-background-card">US Dollar ($)</option>
+              <option value="GBP" className="bg-background-card">British Pound (£)</option>
+              <option value="EUR" className="bg-background-card">Euro (€)</option>
             </select>
           </div>
 

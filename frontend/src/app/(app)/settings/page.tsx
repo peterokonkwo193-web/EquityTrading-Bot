@@ -33,12 +33,16 @@ export default function SettingsPage() {
   const {
     register: registerProfile,
     handleSubmit: handleProfileSubmit,
+    setValue,
+    watch,
     formState: { errors: profileErrors, isSubmitting: isProfileSubmitting, isDirty: isProfileDirty, isValid: isProfileValid },
   } = useForm<ProfileFormInput>({
     resolver: zodResolver(profileSchema),
     mode: "onChange",
     values: user ? { name: user.name, currency: user.currency } : undefined,
   });
+
+  const selectedCurrency = watch("currency");
 
   const {
     register: registerPassword,
@@ -105,22 +109,39 @@ export default function SettingsPage() {
 
       <Card>
         <h2 className="mb-4 text-lg font-semibold text-text-primary">Profile</h2>
-        <form onSubmit={handleProfileSubmit(onSubmitProfile)} className="flex max-w-md flex-col gap-4" noValidate>
+        <form onSubmit={handleProfileSubmit(onSubmitProfile)} className="flex max-w-md flex-col gap-5" noValidate>
           <Input label="Full name" error={profileErrors.name?.message} {...registerProfile("name")} />
           <Input label="Email" value={user?.email ?? ""} disabled readOnly />
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-text-secondary">Preferred currency</label>
-            <select
-              className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-              {...registerProfile("currency")}
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Preferred Currency</label>
+            <div className="grid grid-cols-3 gap-3">
+              {CURRENCIES.map((curr) => {
+                const isSelected = selectedCurrency === curr;
+                return (
+                  <button
+                    key={curr}
+                    type="button"
+                    onClick={() => {
+                      setValue("currency", curr, { shouldDirty: true, shouldValidate: true });
+                    }}
+                    className={`flex flex-col items-center justify-center p-4 border rounded-xl gap-1.5 transition-all select-none ${
+                      isSelected
+                        ? "border-gold bg-gold/[0.05] text-gold"
+                        : "border-white/10 bg-white/[0.01] text-text-secondary hover:bg-white/[0.03] hover:text-text-primary"
+                    }`}
+                  >
+                    <span className="font-bold text-sm tracking-wide">{curr}</span>
+                    <span className="text-[10px] text-text-muted text-center leading-tight">
+                      {curr === "USD" ? "Dollar ($)" : curr === "GBP" ? "Pound (£)" : "Euro (€)"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {profileErrors.currency && (
+              <p className="text-xs text-danger">{profileErrors.currency.message}</p>
+            )}
           </div>
 
           <StatusBanner status={profileStatus.status} />

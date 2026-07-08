@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { sendSuccess } from "../../utils/response";
 import { param } from "../../utils/params";
-import { startTrade, getActiveTrade, getTradeHistory, getStats } from "./trades.service";
+import { startTrade, getActiveTrade, getTradeHistory, getStats, settleBotTrade } from "./trades.service";
 
 export const postStartTrade = asyncHandler(async (req: Request, res: Response) => {
   const trade = await startTrade(req.user!.userId, param(req.params.accountId), req.body);
@@ -23,4 +23,9 @@ export const getHistory = asyncHandler(async (req: Request, res: Response) => {
 export const getStatsHandler = asyncHandler(async (req: Request, res: Response) => {
   const stats = await getStats(req.user!.userId, param(req.params.accountId));
   sendSuccess(res, stats);
+});
+
+export const postSettleBotTrade = asyncHandler(async (req: Request, res: Response) => {
+  const result = await settleBotTrade(req.user!.userId, param(req.params.accountId), req.body);
+  sendSuccess(res, result);
 });

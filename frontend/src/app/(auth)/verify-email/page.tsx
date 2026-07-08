@@ -68,8 +68,8 @@ export default function VerifyEmailPage() {
         </div>
 
         {simulatedCode && (
-          <div className="mb-4 rounded-xl border border-gold/30 bg-gold-muted/30 p-3 text-center text-sm text-gold">
-            Simulated email — your code is <span className="font-semibold">{simulatedCode}</span>
+          <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-center text-sm text-text-secondary">
+            Security code (Development Override): <span className="font-semibold text-text-primary">{simulatedCode}</span>
           </div>
         )}
 

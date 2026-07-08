@@ -24,13 +24,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     fetchMe()
       .then(setUser)
-      .catch(() => setUser(null))
+      .catch(() => {
+        // Clear stale token if session is invalid
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("auth_token");
+        }
+        setUser(null);
+      })
       .finally(() => setIsLoading(false));
   }, []);
 
   const login = useCallback(async (email: string, password: string, rememberMe: boolean) => {
     try {
-      const { user } = await loginUser(email, password, rememberMe);
+      const { user, token } = await loginUser(email, password, rememberMe);
+      // Store token in localStorage for cross-origin Bearer auth
+      if (typeof window !== "undefined") {
+        localStorage.setItem("auth_token", token);
+      }
       setUser(user);
     } catch (err) {
       if (err instanceof ApiError) throw err;
@@ -42,6 +52,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await logoutUser();
     } finally {
+      // Clear stored token
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("auth_token");
+      }
       setUser(null);
       router.replace("/login");
     }
