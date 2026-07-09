@@ -102,22 +102,33 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {isStatsLoading || !stats ? (
-          Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
-        ) : (
-          <>
-            <SummaryCard icon={Activity} label="Total Trades" value={String(stats.tradesCount)} accent="blue" />
-            <SummaryCard icon={CheckCircle2} label="Wins" value={String(stats.winCount)} accent="success" />
-            <SummaryCard
-              icon={XCircle}
-              label="Losses"
-              value={String(stats.tradesCount - stats.winCount)}
-              accent="danger"
-            />
-          </>
-        )}
-      </div>
+      {isStatsLoading || !stats ? (
+        <Skeleton className="h-24 w-full" />
+      ) : (
+        <Card className="flex items-center gap-4">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl text-primary bg-primary-muted">
+            <Activity className="h-5 w-5" />
+          </div>
+          <div className="flex flex-1 items-center justify-between gap-4">
+            <div>
+              <p className="text-sm text-text-secondary">Total Trades</p>
+              <p className="text-lg font-semibold text-text-primary">{stats.tradesCount}</p>
+            </div>
+            <div className="flex items-center gap-5">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-4 w-4 text-green-400" />
+                <span className="text-sm font-semibold text-green-400">{stats.winCount} Wins</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <XCircle className="h-4 w-4 text-rose-400" />
+                <span className="text-sm font-semibold text-rose-400">
+                  {stats.tradesCount - stats.winCount} Losses
+                </span>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <Card>
         <h3 className="mb-4 text-sm font-semibold text-text-secondary">Performance Chart</h3>
