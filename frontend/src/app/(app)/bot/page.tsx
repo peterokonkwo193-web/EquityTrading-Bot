@@ -63,6 +63,7 @@ interface SimulatedTradeItem {
   entryPrice: number;
   exitPrice: number;
   duration: number;
+  amount: number;
   profitLoss: number;
   status: "OPEN" | "CLOSED";
   startTime: Date;
@@ -239,6 +240,7 @@ export default function TradingBotPage() {
       entryPrice,
       exitPrice: 0,
       duration,
+      amount: currentAmount,
       profitLoss: 0,
       status: "OPEN",
       startTime: new Date(),
@@ -786,7 +788,9 @@ export default function TradingBotPage() {
                     </span>
                     <div className="flex flex-col">
                       <span className="font-semibold text-text-primary text-sm">{t.pair}</span>
-                      <span className="text-[10px] text-text-muted">{t.startTime.toLocaleTimeString()}</span>
+                      <span className="text-[10px] text-text-muted">
+                        {formatCurrency(t.amount, currency)} · {t.startTime.toLocaleTimeString()}
+                      </span>
                     </div>
                   </div>
                   <span className={`font-semibold font-mono text-sm ${t.profitLoss >= 0 ? "text-green-400" : "text-rose-400"}`}>
