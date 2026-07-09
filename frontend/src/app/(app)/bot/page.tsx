@@ -11,9 +11,9 @@ import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Badge, GoldBadge } from "@/components/ui/Badge";
 import { useStatus } from "@/hooks/useStatus";
-import { 
-  Rocket, TrendingUp, Activity, 
-  AlertTriangle, Pause, Play, Square, RotateCcw, 
+import {
+  Rocket, TrendingUp, Activity,
+  AlertTriangle, Pause, Play, Square,
   Loader2, Check
 } from "lucide-react";
 
@@ -107,9 +107,8 @@ export default function TradingBotPage() {
   const [sessionProfit, setSessionProfit] = useState<number>(0);
   const [historyBalances, setHistoryBalances] = useState<number[]>([]);
   const [historyProfits, setHistoryProfits] = useState<number[]>([]);
-  const [activityLogs, setActivityLogs] = useState<string[]>(["Algo Engine ready. Select a market class to begin."]);
+  const [, setActivityLogs] = useState<string[]>(["Algo Engine ready. Select a market class to begin."]);
 
-  const activityLogRef = useRef<HTMLDivElement>(null);
   const rotationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const tradeTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -136,12 +135,6 @@ export default function TradingBotPage() {
     const timestamp = new Date().toLocaleTimeString();
     setActivityLogs((prev) => [...prev.slice(-49), `[${timestamp}] ${msg}`]);
   }, []);
-
-  useEffect(() => {
-    if (activityLogRef.current) {
-      activityLogRef.current.scrollTop = activityLogRef.current.scrollHeight;
-    }
-  }, [activityLogs]);
 
   // Rotation messages interval
   useEffect(() => {
@@ -413,19 +406,6 @@ export default function TradingBotPage() {
     }
   };
 
-  const handleRestart = async () => {
-    // Reset session metrics
-    setTodayProfit(0);
-    setSessionProfit(0);
-    setTrades([]);
-    setCurrentTrade(null);
-    setHistoryProfits([]);
-    setActivityLogs(["System reset. Initializing fresh AI engine sequence..."]);
-    
-    // Trigger startup sequence
-    handleStartBot();
-  };
-
   // Clean values for stats
   const totalTrades = trades.length;
   const winningTrades = trades.filter((t) => t.profitLoss > 0).length;
@@ -526,11 +506,11 @@ export default function TradingBotPage() {
       )}
 
       {botStatus !== "Initializing" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
+        <div className={activeMarket ? "grid grid-cols-1 lg:grid-cols-3 gap-6" : "grid grid-cols-1"}>
+
           {/* Controls & Setup Side */}
-          <div className="lg:col-span-1 flex flex-col gap-6">
-            
+          <div className={activeMarket ? "lg:col-span-1 flex flex-col gap-6" : "w-full max-w-md mx-auto flex flex-col gap-6"}>
+
             {/* Setup Config Card */}
             <Card className="p-6 flex flex-col gap-5 border border-white/10">
               <div>
@@ -623,15 +603,15 @@ export default function TradingBotPage() {
                 <div className="flex flex-col gap-3 mt-2 border-t border-white/5 pt-4">
                   <div className="flex justify-between items-center text-xs font-semibold text-text-secondary">
                     <span>Live Bot Controls</span>
-                    <span className="flex items-center gap-1.5 px-2 py-0.5 bg-gold/10 text-gold border border-gold/20 rounded font-mono text-[9px] uppercase">
-                      <span className="h-1.5 w-1.5 rounded-full bg-gold animate-ping" />
+                    <span className="flex items-center gap-1.5 px-2 py-0.5 bg-white/5 text-text-secondary border border-white/10 rounded font-mono text-[9px] uppercase">
+                      <span className="h-1.5 w-1.5 rounded-full bg-gold animate-pulse" />
                       {botStatus}
                     </span>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-2">
                     {isPaused ? (
-                      <Button onClick={handleResume} variant="gold" className="w-full text-xs">
+                      <Button onClick={handleResume} variant="secondary" className="w-full text-xs">
                         <Play className="h-3.5 w-3.5" />
                         Resume
                       </Button>
@@ -641,16 +621,11 @@ export default function TradingBotPage() {
                         Pause
                       </Button>
                     )}
-                    <Button onClick={handleStop} variant="secondary" className="w-full text-xs border border-red-500/20 text-red-400 hover:bg-red-500/10">
+                    <Button onClick={handleStop} variant="secondary" className="w-full text-xs">
                       <Square className="h-3.5 w-3.5" />
                       Stop
                     </Button>
                   </div>
-
-                  <Button onClick={handleRestart} variant="secondary" className="w-full text-xs">
-                    <RotateCcw className="h-3.5 w-3.5" />
-                    Restart Simulator
-                  </Button>
                 </div>
               )}
             </Card>
@@ -700,19 +675,10 @@ export default function TradingBotPage() {
 
                     {/* Progress countdown indicator */}
                     <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gold transition-all duration-1000" 
+                      <div
+                        className="h-full bg-gold transition-all duration-1000"
                         style={{ width: `${(countdown / currentTrade.duration) * 100}%` }}
                       />
-                    </div>
-
-                    {/* Live Ticker */}
-                    <div className="flex flex-col items-center justify-center p-3 bg-white/[0.02] border border-white/5 rounded-xl">
-                      <span className="text-[10px] text-text-secondary uppercase tracking-wider mb-0.5">Live Profit/Loss</span>
-                      <span className={`text-2xl font-bold font-mono ${livePnlFluct >= 0 ? "text-green-400" : "text-rose-400"}`}>
-                        {livePnlFluct >= 0 ? "+" : ""}
-                        {formatCurrency(livePnlFluct, currency)}
-                      </span>
                     </div>
                   </div>
                 ) : (
@@ -729,8 +695,9 @@ export default function TradingBotPage() {
           </div>
 
           {/* Statistics Dashboard Area */}
+          {activeMarket && (
           <div className="lg:col-span-2 flex flex-col gap-6">
-            
+
             {/* Session Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               
@@ -786,84 +753,48 @@ export default function TradingBotPage() {
               </div>
             </div>
 
-            {/* Scrolling Activity Log */}
-            <Card className="p-5 border border-white/10 flex flex-col gap-3">
-              <span className="text-xs font-semibold text-text-primary uppercase tracking-wider">AI Operations Log</span>
-              <div 
-                ref={activityLogRef}
-                className="h-36 overflow-y-auto font-mono text-[10px] text-text-secondary flex flex-col gap-1.5 bg-black/40 border border-white/5 p-4 rounded-xl select-all scrollbar-thin"
-              >
-                {activityLogs.map((log, idx) => (
-                  <div key={idx} className="transition-all duration-300">
-                    <span className="text-gold mr-1.5">&gt;</span>
-                    {log}
-                  </div>
-                ))}
-              </div>
-            </Card>
-
           </div>
+          )}
 
         </div>
       )}
 
-      {/* Trade History Table */}
-      {trades.length > 0 && (
+      {/* Live Trade Feed */}
+      {activeMarket && (
         <Card className="p-6 border border-white/10">
-          <h3 className="font-bold text-text-primary text-base border-b border-white/10 pb-4 mb-4">Completed Cycles</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm border-collapse">
-              <thead>
-                <tr className="border-b border-white/5 text-text-secondary text-xs uppercase tracking-wider">
-                  <th className="py-2.5 font-semibold">Time</th>
-                  <th className="py-2.5 font-semibold">Pair</th>
-                  <th className="py-2.5 font-semibold">Direction</th>
-                  <th className="py-2.5 font-semibold">Entry Price</th>
-                  <th className="py-2.5 font-semibold">Exit Price</th>
-                  <th className="py-2.5 font-semibold">Duration</th>
-                  <th className="py-2.5 font-semibold">Profit / Loss</th>
-                  <th className="py-2.5 font-semibold text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {trades.map((t) => (
-                  <tr key={t.id} className="hover:bg-white/[0.01] transition-colors">
-                    <td className="py-3 text-xs text-text-secondary">
-                      {t.startTime.toLocaleTimeString()}
-                    </td>
-                    <td className="py-3 font-semibold text-text-primary">
-                      {t.pair}
-                    </td>
-                    <td className="py-3">
-                      <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
+          <h3 className="font-bold text-text-primary text-base border-b border-white/10 pb-4 mb-4">Live Trade Feed</h3>
+          {trades.length === 0 ? (
+            <p className="py-8 text-center text-sm text-text-muted">
+              No trades executed yet. Your bot&apos;s trade feed will appear here once it opens a position.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {trades.map((t) => (
+                <div
+                  key={t.id}
+                  className="flex items-center justify-between gap-4 rounded-xl border border-white/5 bg-white/[0.01] p-4 hover:bg-white/[0.03] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded shrink-0 ${
                         t.direction === "BUY" ? "text-green-400 bg-green-500/10" : "text-rose-400 bg-rose-500/10"
-                      }`}>
-                        {t.direction}
-                      </span>
-                    </td>
-                    <td className="py-3 font-mono text-xs text-text-secondary">
-                      {t.entryPrice.toFixed(4)}
-                    </td>
-                    <td className="py-3 font-mono text-xs text-text-secondary">
-                      {t.exitPrice.toFixed(4)}
-                    </td>
-                    <td className="py-3 text-xs text-text-secondary font-mono">
-                      {t.duration}s
-                    </td>
-                    <td className={`py-3 font-semibold font-mono text-xs ${t.profitLoss >= 0 ? "text-green-400" : "text-rose-400"}`}>
-                      {t.profitLoss >= 0 ? "+" : ""}
-                      {formatCurrency(t.profitLoss, currency)}
-                    </td>
-                    <td className="py-3 text-right">
-                      <Badge className="text-[10px] font-mono uppercase bg-white/5 border-white/5">
-                        {t.status}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      }`}
+                    >
+                      {t.direction}
+                    </span>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-text-primary text-sm">{t.pair}</span>
+                      <span className="text-[10px] text-text-muted">{t.startTime.toLocaleTimeString()}</span>
+                    </div>
+                  </div>
+                  <span className={`font-semibold font-mono text-sm ${t.profitLoss >= 0 ? "text-green-400" : "text-rose-400"}`}>
+                    {t.profitLoss >= 0 ? "+" : ""}
+                    {formatCurrency(t.profitLoss, currency)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
       )}
 

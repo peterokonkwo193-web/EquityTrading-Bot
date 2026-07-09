@@ -88,17 +88,17 @@ export default function DashboardPage() {
             <SummaryCard
               icon={TrendingUp}
               label="Today's Profit"
-              value={formatCurrency(stats.todayPnl, currency)}
-              accent={Number(stats.todayPnl) >= 0 ? "gold" : "danger"}
+              value={`${Number(stats.todayPnl) >= 0 ? "+" : ""}${formatCurrency(stats.todayPnl, currency)}`}
+              accent={Number(stats.todayPnl) >= 0 ? "success" : "danger"}
             />
             <SummaryCard
               icon={DollarSign}
               label="Total Profit"
-              value={formatCurrency(stats.totalPnl, currency)}
-              accent={Number(stats.totalPnl) >= 0 ? "gold" : "danger"}
+              value={`${Number(stats.totalPnl) >= 0 ? "+" : ""}${formatCurrency(stats.totalPnl, currency)}`}
+              accent={Number(stats.totalPnl) >= 0 ? "success" : "danger"}
             />
             <SummaryCard icon={Activity} label="Total Trades" value={String(stats.tradesCount)} accent="blue" />
-            <SummaryCard icon={Percent} label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} accent="blue" />
+            <SummaryCard icon={Percent} label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} accent="gold" />
           </>
         )}
       </div>

@@ -50,8 +50,6 @@ export default function WalletPage() {
 
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"deposit" | "withdraw">("deposit");
-  const [historyFilter, setHistoryFilter] = useState<"ALL" | "DEPOSIT" | "WITHDRAWAL">("ALL");
 
   // Form State - Deposit
   const [depAmount, setDepAmount] = useState("");
@@ -298,38 +296,16 @@ export default function WalletPage() {
         </Card>
       </div>
 
-      {/* Main Grid: Form and History */}
+      {/* Main Grid: Forms and History */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Forms Card */}
-        <Card className="lg:col-span-5 flex flex-col">
-          {/* Tab Selector */}
-          <div className="flex border-b border-white/10 mb-6">
-            <button
-              onClick={() => { setActiveTab("deposit"); status.clear(); }}
-              className={`flex-1 pb-3 text-sm font-semibold transition-all border-b-2 flex items-center justify-center gap-2 ${
-                activeTab === "deposit"
-                  ? "border-gold text-gold"
-                  : "border-transparent text-text-secondary hover:text-text-primary"
-              }`}
-            >
-              <ArrowDownLeft className="h-4 w-4" />
+        {/* Forms Column */}
+        <div className="lg:col-span-5 flex flex-col gap-6">
+          {/* Deposit Card */}
+          <Card className="flex flex-col">
+            <div className="mb-5 flex items-center gap-2 text-sm font-semibold text-text-primary">
+              <ArrowDownLeft className="h-4 w-4 text-gold" />
               Deposit Assets
-            </button>
-            <button
-              onClick={() => { setActiveTab("withdraw"); status.clear(); }}
-              className={`flex-1 pb-3 text-sm font-semibold transition-all border-b-2 flex items-center justify-center gap-2 ${
-                activeTab === "withdraw"
-                  ? "border-gold text-gold"
-                  : "border-transparent text-text-secondary hover:text-text-primary"
-              }`}
-            >
-              <ArrowUpRight className="h-4 w-4" />
-              Withdraw Assets
-            </button>
-          </div>
-
-          {/* Form Content */}
-          {activeTab === "deposit" ? (
+            </div>
             <form onSubmit={handleDepositSubmit} className="flex flex-col gap-4 flex-1">
               <div className="grid grid-cols-2 gap-4">
                 {/* Asset */}
@@ -440,7 +416,14 @@ export default function WalletPage() {
                 Verify & Submit Deposit
               </Button>
             </form>
-          ) : (
+          </Card>
+
+          {/* Withdraw Card */}
+          <Card className="flex flex-col">
+            <div className="mb-5 flex items-center gap-2 text-sm font-semibold text-text-primary">
+              <ArrowUpRight className="h-4 w-4 text-gold" />
+              Withdraw Assets
+            </div>
             <form onSubmit={handleWithdrawalSubmit} className="flex flex-col gap-4 flex-1">
               <div className="grid grid-cols-2 gap-4">
                 {/* Asset */}
@@ -504,42 +487,20 @@ export default function WalletPage() {
                 Execute Withdrawal Request
               </Button>
             </form>
-          )}
-        </Card>
+          </Card>
+        </div>
 
         {/* Transaction History Card */}
         <Card className="lg:col-span-7 flex flex-col gap-0">
-          {/* Header + Filter Tabs */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4 mb-5">
-            <div className="flex items-center gap-2">
-              <History className="h-5 w-5 text-gold" />
-              <h3 className="text-base font-semibold text-text-primary">Transaction History</h3>
-              {wallet && wallet.fundingHistory.length > 0 && (
-                <span className="text-[10px] font-bold bg-white/10 text-text-secondary px-2 py-0.5 rounded-full">
-                  {wallet.fundingHistory.length}
-                </span>
-              )}
-            </div>
-            {/* Filter Tabs */}
-            <div className="flex bg-white/5 border border-white/5 p-1 rounded-xl gap-1 shrink-0">
-              {(["ALL", "DEPOSIT", "WITHDRAWAL"] as const).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setHistoryFilter(f)}
-                  className={`px-3 py-1 rounded-lg text-[11px] font-semibold uppercase tracking-wider transition-all ${
-                    historyFilter === f
-                      ? f === "DEPOSIT"
-                        ? "bg-green-500/20 text-green-400 shadow"
-                        : f === "WITHDRAWAL"
-                        ? "bg-red-500/20 text-red-400 shadow"
-                        : "bg-gold text-black shadow-lg"
-                      : "text-text-secondary hover:text-text-primary hover:bg-white/5"
-                  }`}
-                >
-                  {f === "ALL" ? "All" : f === "DEPOSIT" ? "Deposits" : "Withdrawals"}
-                </button>
-              ))}
-            </div>
+          {/* Header */}
+          <div className="flex items-center gap-2 border-b border-white/10 pb-4 mb-5">
+            <History className="h-5 w-5 text-gold" />
+            <h3 className="text-base font-semibold text-text-primary">Transaction History</h3>
+            {wallet && wallet.fundingHistory.length > 0 && (
+              <span className="text-[10px] font-bold bg-white/10 text-text-secondary px-2 py-0.5 rounded-full">
+                {wallet.fundingHistory.length}
+              </span>
+            )}
           </div>
 
           {/* Content */}
@@ -557,32 +518,9 @@ export default function WalletPage() {
                 <p className="text-xs text-text-muted mt-1">Your deposit and withdrawal history will appear here.</p>
               </div>
             ) : (() => {
-              const filtered = wallet.fundingHistory.filter((tx: WalletTransaction) =>
-                historyFilter === "ALL" ? true : tx.type === historyFilter
-              );
-
-              if (filtered.length === 0) {
-                return (
-                  <div className="flex flex-col items-center justify-center py-16 text-center">
-                    {historyFilter === "DEPOSIT"
-                      ? <ArrowDownLeft className="h-10 w-10 text-text-muted opacity-20 mb-3" />
-                      : <ArrowUpRight className="h-10 w-10 text-text-muted opacity-20 mb-3" />
-                    }
-                    <p className="text-sm font-medium text-text-secondary">
-                      No {historyFilter === "DEPOSIT" ? "deposits" : "withdrawals"} found
-                    </p>
-                    <p className="text-xs text-text-muted mt-1">
-                      {historyFilter === "DEPOSIT"
-                        ? "Submit a deposit request to fund your account."
-                        : "No withdrawal requests have been made yet."}
-                    </p>
-                  </div>
-                );
-              }
-
               return (
                 <div className="flex flex-col gap-2">
-                  {filtered.map((tx: WalletTransaction) => {
+                  {wallet.fundingHistory.map((tx: WalletTransaction) => {
                     const isDep = tx.type === "DEPOSIT";
                     const isPending = tx.status === "PENDING";
                     const isApproved = tx.status === "APPROVED";

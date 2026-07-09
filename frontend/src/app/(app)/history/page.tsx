@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Card } from "@/components/ui/Card";
@@ -9,22 +9,12 @@ import { TradeStatusBadge } from "@/components/ui/Badge";
 import { useAccount } from "@/context/AccountContext";
 import { fetchTradeHistory } from "@/lib/endpoints";
 import { formatCurrency } from "@/lib/currency";
-import { buildPerformanceBuckets, PerformanceGrouping } from "@/lib/performance";
-import { BarPerformanceChart } from "@/components/charts/BarPerformanceChart";
-import { WinLossPieChart } from "@/components/charts/WinLossPieChart";
 import { SimulatedTrade } from "@/types";
-
-const GROUPINGS: { value: PerformanceGrouping; label: string }[] = [
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-  { value: "monthly", label: "Monthly" },
-];
 
 export default function HistoryPage() {
   const { selectedAccount } = useAccount();
   const [trades, setTrades] = useState<SimulatedTrade[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [grouping, setGrouping] = useState<PerformanceGrouping>("daily");
 
   const accountId = selectedAccount?.id ?? null;
 
@@ -47,11 +37,6 @@ export default function HistoryPage() {
     };
   }, [accountId]);
 
-  const closedTrades = useMemo(() => trades.filter((t) => t.status === "CLOSED"), [trades]);
-  const wins = useMemo(() => closedTrades.filter((t) => Number(t.profitLoss) >= 0).length, [closedTrades]);
-  const losses = closedTrades.length - wins;
-  const performanceBuckets = useMemo(() => buildPerformanceBuckets(trades, grouping), [trades, grouping]);
-
   if (!selectedAccount) {
     return (
       <Card>
@@ -64,46 +49,6 @@ export default function HistoryPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-text-secondary">Performance</h3>
-            <div className="inline-flex rounded-lg border border-white/10 bg-white/[0.03] p-0.5">
-              {GROUPINGS.map((g) => (
-                <button
-                  key={g.value}
-                  onClick={() => setGrouping(g.value)}
-                  className={clsx(
-                    "rounded-md px-3 py-1 text-xs font-medium transition-colors",
-                    grouping === g.value ? "bg-primary text-white" : "text-text-secondary hover:text-text-primary"
-                  )}
-                >
-                  {g.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          {isLoading ? (
-            <Skeleton className="h-60 w-full" />
-          ) : performanceBuckets.length === 0 ? (
-            <p className="py-16 text-center text-sm text-text-muted">No closed trades yet.</p>
-          ) : (
-            <BarPerformanceChart data={performanceBuckets} />
-          )}
-        </Card>
-
-        <Card>
-          <h3 className="mb-4 text-sm font-semibold text-text-secondary">Win / Loss</h3>
-          {isLoading ? (
-            <Skeleton className="h-60 w-full" />
-          ) : closedTrades.length === 0 ? (
-            <p className="py-16 text-center text-sm text-text-muted">No closed trades yet.</p>
-          ) : (
-            <WinLossPieChart wins={wins} losses={losses} />
-          )}
-        </Card>
-      </div>
-
       <Card>
         <h3 className="mb-4 text-sm font-semibold text-text-secondary">Trade History</h3>
         {isLoading ? (
@@ -138,7 +83,7 @@ export default function HistoryPage() {
                         <span
                           className={clsx(
                             "inline-flex items-center gap-1",
-                            trade.direction === "BUY" ? "text-primary" : "text-danger"
+                            trade.direction === "BUY" ? "text-green-400" : "text-rose-400"
                           )}
                         >
                           {trade.direction === "BUY" ? (
@@ -149,7 +94,7 @@ export default function HistoryPage() {
                           {trade.direction}
                         </span>
                       </td>
-                      <td className={clsx("py-3 pr-4 font-medium", isWin ? "text-gold" : "text-danger")}>
+                      <td className={clsx("py-3 pr-4 font-medium", isWin ? "text-green-400" : "text-rose-400")}>
                         {trade.status === "CLOSED" ? `${isWin ? "+" : ""}${formatCurrency(pnl, currency)}` : "—"}
                       </td>
                       <td className="py-3 pr-4 text-text-secondary">{trade.durationSeconds}s</td>
