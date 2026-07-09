@@ -442,15 +442,20 @@ export default function WalletPage() {
             </span>
           </div>
 
-          <Input
-            label="Amount"
-            type="number"
-            step="0.00000001"
-            placeholder="0.00"
-            value={depAmount}
-            onChange={(e) => setDepAmount(e.target.value)}
-            required
-          />
+          <div className="flex flex-col gap-1.5">
+            <Input
+              label="Amount"
+              type="number"
+              step="0.00000001"
+              placeholder="0.00"
+              value={depAmount}
+              onChange={(e) => setDepAmount(e.target.value)}
+              required
+            />
+            <span className="text-[10px] text-text-muted">
+              Minimum deposit: {formatCurrency(100, selectedAccount.currency)} equivalent
+            </span>
+          </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
