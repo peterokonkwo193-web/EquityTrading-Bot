@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DollarSign, TrendingUp, Activity, Percent } from "lucide-react";
+import { DollarSign, TrendingUp, Activity, Percent, CheckCircle2, XCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useAccount } from "@/context/AccountContext";
 import { useTradingStats } from "@/hooks/useTradingStats";
@@ -99,6 +99,23 @@ export default function DashboardPage() {
             />
             <SummaryCard icon={Activity} label="Total Trades" value={String(stats.tradesCount)} accent="blue" />
             <SummaryCard icon={Percent} label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} accent="gold" />
+          </>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {isStatsLoading || !stats ? (
+          Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
+        ) : (
+          <>
+            <SummaryCard icon={Activity} label="Total Trades" value={String(stats.tradesCount)} accent="blue" />
+            <SummaryCard icon={CheckCircle2} label="Wins" value={String(stats.winCount)} accent="success" />
+            <SummaryCard
+              icon={XCircle}
+              label="Losses"
+              value={String(stats.tradesCount - stats.winCount)}
+              accent="danger"
+            />
           </>
         )}
       </div>
