@@ -80,6 +80,7 @@ model User {
   passwordHash          String
   name                  String
   avatarUrl             String?
+  country               String?
   currency              Currency   @default(USD)
   status                UserStatus @default(ACTIVE)
   role                  UserRole   @default(USER)

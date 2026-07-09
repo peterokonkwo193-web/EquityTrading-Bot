@@ -10,7 +10,7 @@ interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string, rememberMe: boolean) => Promise<void>;
-  register: (name: string, email: string, password: string, currency: Currency) => Promise<void>;
+  register: (name: string, email: string, password: string, currency: Currency, country: string) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: User) => void;
 }
@@ -50,9 +50,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (name: string, email: string, password: string, currency: Currency) => {
+    async (name: string, email: string, password: string, currency: Currency, country: string) => {
       try {
-        const { user, token } = await registerUser({ name, email, password, currency });
+        const { user, token } = await registerUser({ name, email, password, currency, country });
         if (typeof window !== "undefined") {
           localStorage.setItem("auth_token", token);
         }

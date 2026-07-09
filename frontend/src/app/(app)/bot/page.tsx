@@ -275,7 +275,9 @@ export default function TradingBotPage() {
     const winProbability = 0.85 + Math.random() * 0.10;
     const isWin = Math.random() < winProbability;
     const returnPct = isWin ? (2.0 + Math.random() * 5.0) : -(1.5 + Math.random() * 2.5);
-    const finalProfitLoss = Math.round(currentAmount * (returnPct / 100) * 100) / 100;
+    const rawProfitLoss = Math.round(currentAmount * (returnPct / 100) * 100) / 100;
+    // Guarantee at least $1 of movement either way, however small the trade amount.
+    const finalProfitLoss = Math.abs(rawProfitLoss) < 1 ? (isWin ? 1 : -1) : rawProfitLoss;
     const exitPrice = direction === "BUY"
       ? entryPrice * (1 + returnPct / 100)
       : entryPrice * (1 - returnPct / 100);
@@ -575,7 +577,7 @@ export default function TradingBotPage() {
                     onChange={(e) => setTradeAmount(e.target.value)}
                   />
                   <div className="flex justify-between text-[10px] text-text-muted font-mono mt-0.5">
-                    <span>Min Capital: $100</span>
+                    <span>Min Capital: {formatCurrency(100, currency)}</span>
                     <span>Account: {formatCurrency(balance, currency)}</span>
                   </div>
 

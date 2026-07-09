@@ -14,6 +14,7 @@ function toPublicUser(user: {
   email: string;
   name: string;
   avatarUrl: string | null;
+  country: string | null;
   currency: string;
   emailVerified: boolean;
   role: "USER" | "ADMIN";
@@ -23,6 +24,7 @@ function toPublicUser(user: {
     email: user.email,
     name: user.name,
     avatarUrl: user.avatarUrl,
+    country: user.country,
     currency: user.currency,
     emailVerified: user.emailVerified,
     role: user.role,
@@ -42,6 +44,7 @@ export async function registerUser(input: RegisterInput) {
       email: input.email,
       passwordHash,
       name: input.name,
+      country: input.country,
       currency: input.currency,
       emailVerified: true,
       settings: { create: {} },
