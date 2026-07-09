@@ -80,9 +80,9 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {isStatsLoading || !stats ? (
-          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
+          Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
         ) : (
           <>
             <SummaryCard
@@ -97,7 +97,6 @@ export default function DashboardPage() {
               value={`${Number(stats.totalPnl) >= 0 ? "+" : ""}${formatCurrency(stats.totalPnl, currency)}`}
               accent={Number(stats.totalPnl) >= 0 ? "success" : "danger"}
             />
-            <SummaryCard icon={Activity} label="Total Trades" value={String(stats.tradesCount)} accent="blue" />
             <SummaryCard icon={Percent} label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} accent="gold" />
           </>
         )}

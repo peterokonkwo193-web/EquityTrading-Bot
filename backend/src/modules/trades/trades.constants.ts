@@ -7,8 +7,8 @@ export const MIN_TRADE_AMOUNT = 100;
 export const TRADE_DURATION_SECONDS = 20;
 
 export const WIN_PROBABILITY = 0.85;
-export const PROFIT_PCT_MIN = 0.015;
-export const PROFIT_PCT_MAX = 0.025;
-export const LOSS_PCT_MIN = 0.004;
-export const LOSS_PCT_MAX = 0.008;
+export const PROFIT_PCT_MIN = 0.01;
+export const PROFIT_PCT_MAX = 0.02;
+export const LOSS_PCT_MIN = 0.008;
+export const LOSS_PCT_MAX = 0.017;
 

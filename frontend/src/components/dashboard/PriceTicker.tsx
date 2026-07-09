@@ -47,8 +47,8 @@ export function PriceTicker() {
           return (
             <div key={`${entry.symbol}-${i}`} className="flex items-center gap-2 text-sm">
               <span className="font-medium text-text-primary">{entry.symbol}</span>
-              <span className="text-text-secondary">{formatPrice(entry)}</span>
-              <span className={clsx("flex items-center gap-0.5", isUp ? "text-gold" : "text-danger")}>
+              <span className={clsx(isUp ? "text-green-400" : "text-rose-400")}>{formatPrice(entry)}</span>
+              <span className={clsx("flex items-center gap-0.5", isUp ? "text-green-400" : "text-rose-400")}>
                 {isUp ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
                 {Math.abs(entry.changePct).toFixed(2)}%
               </span>
