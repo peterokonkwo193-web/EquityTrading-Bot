@@ -99,6 +99,7 @@ export interface Wallet {
   totalWithdrawals: string;
   pendingDeposits: string;
   pendingWithdrawals: string;
+  accountLimit: string;
   fundingHistory: WalletTransaction[];
 }
 

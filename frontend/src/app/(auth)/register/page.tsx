@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { TrendingUp, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { CountrySelect } from "@/components/ui/CountrySelect";
 import { StatusBanner } from "@/components/status/StatusBanner";
 import { useStatus } from "@/hooks/useStatus";
 import { registerSchema, RegisterFormInput } from "@/lib/validators/register";
@@ -25,18 +24,17 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    control,
     formState: { errors, isSubmitting, isValid },
   } = useForm<RegisterFormInput>({
     resolver: zodResolver(registerSchema),
     mode: "onChange",
-    defaultValues: { currency: "USD", country: "" },
+    defaultValues: { currency: "USD" },
   });
 
   const onSubmit = async (values: RegisterFormInput) => {
     status.clear();
     try {
-      await registerAccount(values.name, values.email, values.password, values.currency, values.country);
+      await registerAccount(values.name, values.email, values.password, values.currency);
       router.push("/dashboard");
     } catch (err) {
       const message = err instanceof ApiError ? err.message : "Registration failed. Please try again.";
@@ -87,19 +85,6 @@ export default function RegisterPage() {
             autoComplete="new-password"
             error={errors.confirmPassword?.message}
             {...register("confirmPassword")}
-          />
-
-          <Controller
-            name="country"
-            control={control}
-            render={({ field }) => (
-              <CountrySelect
-                label="Country"
-                value={field.value}
-                onChange={field.onChange}
-                error={errors.country?.message}
-              />
-            )}
           />
 
           <div className="flex flex-col gap-1.5">

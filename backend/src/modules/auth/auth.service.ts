@@ -44,7 +44,6 @@ export async function registerUser(input: RegisterInput) {
       email: input.email,
       passwordHash,
       name: input.name,
-      country: input.country,
       currency: input.currency,
       emailVerified: true,
       settings: { create: {} },

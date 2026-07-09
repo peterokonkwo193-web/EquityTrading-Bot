@@ -14,13 +14,8 @@ import {
 } from "@/types";
 
 // Auth
-export const registerUser = (input: {
-  name: string;
-  email: string;
-  password: string;
-  currency: Currency;
-  country: string;
-}) => apiRequest<{ user: User; token: string }>("/auth/register", { method: "POST", body: input });
+export const registerUser = (input: { name: string; email: string; password: string; currency: Currency }) =>
+  apiRequest<{ user: User; token: string }>("/auth/register", { method: "POST", body: input });
 
 export const verifyEmail = (email: string, code: string) =>
   apiRequest<User>("/auth/verify-email", { method: "POST", body: { email, code } });

@@ -73,6 +73,11 @@ export async function getWallet(userId: string, accountId: string) {
     orderBy: { createdAt: "desc" },
   });
 
+  // Trading limit scales with cumulative approved deposits: every $100
+  // deposited unlocks $10,000 of tradeable account limit. New deposits
+  // raise the ceiling; the bot halts once balance reaches it.
+  const accountLimit = totalDeposits.times(100);
+
   return {
     balance: account.balance,
     currency: account.currency,
@@ -80,6 +85,7 @@ export async function getWallet(userId: string, accountId: string) {
     totalWithdrawals,
     pendingDeposits,
     pendingWithdrawals,
+    accountLimit,
     fundingHistory: history,
   };
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useAccount } from "@/context/AccountContext";
-import { settleBotTrade } from "@/lib/endpoints";
+import { settleBotTrade, fetchWallet } from "@/lib/endpoints";
 import { formatCurrency } from "@/lib/currency";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useStatus } from "@/hooks/useStatus";
 import {
-  Rocket, TrendingUp, Activity, Target, Wallet,
+  Rocket, TrendingUp, Activity, Target, Wallet as WalletIcon,
   Bitcoin, Landmark, ArrowUpRight, ArrowDownRight,
   AlertTriangle, Square,
   Loader2, Check, CheckCircle2, XCircle
@@ -56,7 +56,6 @@ const ANALYSIS_MESSAGES = [
 
 const CRYPTO_ASSETS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"];
 const FOREX_ASSETS = ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "XAUUSD"];
-const ACCOUNT_LIMIT = 1_000_000;
 
 function isForexMarketOpen() {
   const day = new Date().getDay(); // 0 = Sunday, 6 = Saturday
@@ -109,16 +108,37 @@ export default function TradingBotPage() {
   const [sessionProfit, setSessionProfit] = useState<number>(0);
   const [, setActivityLogs] = useState<string[]>(["Algo Engine ready. Select a market class to begin."]);
 
+  // Deposit-based trading limit: every $100 deposited unlocks $10,000 of limit.
+  const [accountLimit, setAccountLimit] = useState<number>(0);
+
   const rotationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   // Ref to hold latest executeNextTrade without causing dep-loop
   const executeNextTradeRef = useRef<(() => Promise<void>) | null>(null);
   // Ref flags to avoid stale closures on stop
   const stopRequestedRef = useRef(false);
   const isBotActiveRef = useRef(false);
+  const accountLimitRef = useRef(0);
 
   // Available user balance
   const balance = selectedAccount ? Number(selectedAccount.balance) : 0;
   const currency = selectedAccount?.currency || "USD";
+
+  useEffect(() => {
+    if (!accountId) return;
+    let cancelled = false;
+    fetchWallet(accountId)
+      .then((wallet) => {
+        if (!cancelled) {
+          const limit = Number(wallet.accountLimit);
+          setAccountLimit(limit);
+          accountLimitRef.current = limit;
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [accountId, balance]);
 
   // Log auto-scroll helper
   const addLog = useCallback((msg: string) => {
@@ -177,6 +197,16 @@ export default function TradingBotPage() {
 
     // Guard: bot may have been stopped externally
     if (!isBotActiveRef.current) return;
+
+    // Guard: account balance has reached its deposit-based trading limit
+    if (Number(selectedAccount.balance) >= accountLimitRef.current) {
+      isBotActiveRef.current = false;
+      setIsBotActive(false);
+      setBotStatus("Idle");
+      status.error("Account limit reached. Make a new deposit to unlock a higher trading limit.");
+      addLog("Execution terminated: Account limit reached.");
+      return;
+    }
 
     const currentAmount = parseFloat(tradeAmount);
     if (currentAmount > Number(selectedAccount.balance)) {
@@ -310,6 +340,11 @@ export default function TradingBotPage() {
       return;
     }
 
+    if (balance >= accountLimit) {
+      status.error("Account limit reached. Make a new deposit to unlock a higher trading limit.");
+      return;
+    }
+
     // Set ref before async so the loop guard sees it immediately
     isBotActiveRef.current = true;
     stopRequestedRef.current = false;
@@ -370,6 +405,7 @@ export default function TradingBotPage() {
 
   const amtNum = parseFloat(tradeAmount);
   const isBalanceInsufficient = amtNum > balance;
+  const isLimitReached = balance >= accountLimit;
   const forexOpen = isForexMarketOpen();
 
   return (
@@ -465,7 +501,7 @@ export default function TradingBotPage() {
             />
             <div className="flex justify-between text-[11px] text-text-muted font-mono mt-0.5">
               <span>Available: <span className="text-gold">{formatCurrency(balance, currency)}</span></span>
-              <span>Limit: {formatCurrency(ACCOUNT_LIMIT, currency)}</span>
+              <span>Limit: {formatCurrency(accountLimit, currency)}</span>
             </div>
 
             {isBalanceInsufficient && (
@@ -474,10 +510,17 @@ export default function TradingBotPage() {
                 <span>Insufficient available balance. Please deposit funds before starting the simulator.</span>
               </div>
             )}
+
+            {isLimitReached && (
+              <div className="mt-1 text-xs text-rose-400 bg-rose-500/[0.03] border border-rose-500/20 p-3 rounded-lg flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>Account limit reached. Make a new deposit to unlock a higher trading limit.</span>
+              </div>
+            )}
           </div>
 
           <Button
-            disabled={!activeMarket || isBalanceInsufficient || isNaN(amtNum) || amtNum < 100}
+            disabled={!activeMarket || isBalanceInsufficient || isLimitReached || isNaN(amtNum) || amtNum < 100}
             onClick={handleStartBot}
             className="w-full"
           >
@@ -493,7 +536,7 @@ export default function TradingBotPage() {
           <div className="grid grid-cols-2 gap-4">
             <Card className="p-4 flex flex-col gap-1.5">
               <span className="flex items-center gap-1.5 text-xs text-text-secondary">
-                <Wallet className="h-3.5 w-3.5" />
+                <WalletIcon className="h-3.5 w-3.5" />
                 Available Balance
               </span>
               <span className="text-xl font-bold text-gold font-mono">{formatCurrency(balance, currency)}</span>

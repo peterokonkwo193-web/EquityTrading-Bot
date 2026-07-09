@@ -7,7 +7,6 @@ export const registerSchema = z
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string().min(1, "Please confirm your password"),
     currency: z.enum(["USD", "GBP", "EUR"], { message: "Select a currency" }),
-    country: z.string().length(2, "Select your country"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
