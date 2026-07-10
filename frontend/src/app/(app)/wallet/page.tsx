@@ -19,6 +19,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { CryptoIcon } from "@/components/ui/CryptoIcon";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { StatusBanner } from "@/components/status/StatusBanner";
 import { useStatus } from "@/hooks/useStatus";
@@ -342,7 +343,8 @@ export default function WalletPage() {
                     </div>
 
                     <div className="flex flex-col items-center flex-1 min-w-0">
-                      <span className="text-sm font-bold font-mono text-text-primary">
+                      <span className="flex items-center gap-1.5 text-sm font-bold font-mono text-text-primary">
+                        <CryptoIcon symbol={tx.asset} className="h-4 w-4" />
                         {parseFloat(tx.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} {tx.asset}
                       </span>
                       <span className="text-[11px] text-text-secondary">
@@ -390,15 +392,18 @@ export default function WalletPage() {
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Asset</label>
-              <select
-                value={depAsset}
-                onChange={(e) => setDepAsset(e.target.value)}
-                className="rounded-xl border border-white/10 bg-black px-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-              >
-                {SUPPORTED_ASSETS.map((a) => (
-                  <option key={a} value={a}>{a}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <CryptoIcon symbol={depAsset} className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5" />
+                <select
+                  value={depAsset}
+                  onChange={(e) => setDepAsset(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black pl-10 pr-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                >
+                  {SUPPORTED_ASSETS.map((a) => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -498,15 +503,18 @@ export default function WalletPage() {
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Asset</label>
-              <select
-                value={withAsset}
-                onChange={(e) => setWithAsset(e.target.value)}
-                className="rounded-xl border border-white/10 bg-black px-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-              >
-                {SUPPORTED_ASSETS.map((a) => (
-                  <option key={a} value={a}>{a}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <CryptoIcon symbol={withAsset} className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5" />
+                <select
+                  value={withAsset}
+                  onChange={(e) => setWithAsset(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black pl-10 pr-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                >
+                  {SUPPORTED_ASSETS.map((a) => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="flex flex-col gap-1.5">

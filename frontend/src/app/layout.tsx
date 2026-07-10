@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Equity Trading Console",
-  description: "Premium AI Auto-Trading Dashboard & Analytics Console",
+  description: "Premium Auto-Trading Dashboard & Analytics Console",
 };
 
 export default function RootLayout({

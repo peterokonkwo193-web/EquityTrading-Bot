@@ -12,7 +12,7 @@ export const app = express();
 app.use(helmet());
 app.use(cors(corsOptions));
 app.use(cookieParser());
-app.use(express.json());
+app.use(express.json({ limit: "5mb" }));
 app.use(globalRateLimiter);
 
 app.get("/health", (_req, res) => {

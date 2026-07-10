@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUpRight, ArrowDownRight, Activity, Coins } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Activity } from "lucide-react";
+import { CryptoIcon } from "@/components/ui/CryptoIcon";
 import { Card } from "@/components/ui/Card";
 import { fetchTicker } from "@/lib/endpoints";
 
@@ -163,11 +164,15 @@ export function LiveMarketChart() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className={`h-8 w-8 rounded-lg flex items-center justify-center font-bold text-xs ${
-                      isCrypto 
-                        ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" 
+                      isCrypto
+                        ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                         : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
                     }`}>
-                      {isCrypto ? <Coins className="h-4 w-4" /> : "$"}
+                      {isCrypto ? (
+                        <CryptoIcon symbol={symbol.replace("USDT", "").replace("USD", "")} className="h-6 w-6" />
+                      ) : (
+                        "$"
+                      )}
                     </div>
                     <div>
                       <span className="font-bold text-text-primary text-sm">{getCleanLabel(symbol)}</span>

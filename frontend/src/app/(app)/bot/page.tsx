@@ -19,7 +19,7 @@ import {
 
 // Startup steps for the progressive initialization sequence
 const STARTUP_STEPS = [
-  "Initializing AI Engine...",
+  "Initializing Trading Engine...",
   "Loading Market Models...",
   "Connecting to Execution Node...",
   "Scanning Market...",
@@ -294,7 +294,7 @@ export default function TradingBotPage() {
       try {
         await settleBotTrade(accountId, {
           profitLoss: finalProfitLoss,
-          note: `AI Trading Engine: ${direction} ${selectedAsset} P&L`,
+          note: `Trading Engine: ${direction} ${selectedAsset} P&L`,
           market: selectedAsset,
           assetClass: activeMarket === "crypto" ? "CRYPTO" : "FOREX",
           direction,
@@ -359,7 +359,7 @@ export default function TradingBotPage() {
     setBotStatus("Initializing");
     setIsBotActive(true);
     setStartupStep(0);
-    addLog("Initiating AI Bot Startup sequence...");
+    addLog("Initiating Bot Startup sequence...");
 
     // Progressive steps loader simulation
     for (let i = 0; i < STARTUP_STEPS.length; i++) {
@@ -434,7 +434,7 @@ export default function TradingBotPage() {
             <div className="text-gold font-bold text-sm">{Math.round((startupStep / STARTUP_STEPS.length) * 100)}%</div>
           </div>
           <div className="flex flex-col gap-2 max-w-md w-full">
-            <h3 className="font-bold text-text-primary text-lg">Waking Up AI Trading Core</h3>
+            <h3 className="font-bold text-text-primary text-lg">Waking Up Trading Core</h3>
             <p className="text-xs text-text-secondary">Please stand by as database models and indicators load.</p>
 
             <div className="mt-6 flex flex-col gap-2 text-left bg-white/[0.02] border border-white/5 rounded-xl p-4 max-h-[140px] overflow-y-auto">

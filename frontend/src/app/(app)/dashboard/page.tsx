@@ -35,7 +35,7 @@ const PROTECTION_BADGES = [
   { icon: Shield, title: "Bank-grade", subtitle: "256-bit SSL" },
   { icon: Lock, title: "Cold storage", subtitle: "98% offline" },
   { icon: BadgeCheck, title: "Audited", subtitle: "Q4 2025" },
-  { icon: Activity, title: "24/7 Monitoring", subtitle: "AI risk engine" },
+  { icon: Activity, title: "24/7 Monitoring", subtitle: "Real-time risk engine" },
 ];
 
 export default function DashboardPage() {
@@ -106,7 +106,7 @@ export default function DashboardPage() {
           {timeGreeting}, {firstName} 👋
         </h2>
         <p className="text-sm text-text-secondary mt-1">
-          Welcome back to your premium AI trading dashboard.
+          Welcome back to your premium trading dashboard.
         </p>
       </Card>
 
@@ -164,7 +164,7 @@ export default function DashboardPage() {
             </span>
           </div>
           <div className="mt-3 h-1.5 w-full rounded-full overflow-hidden bg-gradient-to-r from-rose-500 via-white/10 to-green-500" />
-          <p className="mt-2 text-xs text-text-muted">AI signal strength across tracked markets.</p>
+          <p className="mt-2 text-xs text-text-muted">Signal strength across tracked markets.</p>
         </Card>
       )}
 
