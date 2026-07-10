@@ -23,7 +23,7 @@ export async function getAssetUsdPrice(asset: string): Promise<number> {
     BTC: 65000,
     ETH: 3400,
     BNB: 580,
-    TRX: 0.13,
+    TRON: 0.13,
   };
 
   return fallbacks[cleanAsset] ?? 1.0;

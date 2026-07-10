@@ -27,12 +27,12 @@ import { fetchWallet, requestDeposit, requestWithdrawal } from "@/lib/endpoints"
 import { formatCurrency } from "@/lib/currency";
 import { Wallet, WalletTransaction } from "@/types";
 
-const SUPPORTED_ASSETS = ["BTC", "USDT", "ETH", "TRX", "BNB", "USDC"] as const;
+const SUPPORTED_ASSETS = ["BTC", "USDT", "ETH", "TRON", "BNB", "USDC"] as const;
 
 const NETWORK_MAPPING: Record<string, string[]> = {
   BTC: ["Bitcoin Native"],
   ETH: ["Ethereum (ERC20)"],
-  TRX: ["Tron (TRC20)"],
+  TRON: ["Tron (TRC20)"],
   BNB: ["BSC (BEP20)"],
   USDT: ["Tron (TRC20)", "Ethereum (ERC20)", "BSC (BEP20)"],
   USDC: ["Ethereum (ERC20)", "BSC (BEP20)"],
