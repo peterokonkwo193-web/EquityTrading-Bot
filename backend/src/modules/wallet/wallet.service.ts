@@ -75,8 +75,9 @@ export async function getWallet(userId: string, accountId: string) {
 
   // Trading limit scales with cumulative approved deposits: every $100
   // deposited unlocks $10,000 of tradeable account limit. New deposits
-  // raise the ceiling; the bot halts once balance reaches it.
-  const accountLimit = totalDeposits.times(100);
+  // raise the ceiling; the bot halts once balance reaches it. Once total
+  // deposits reach 1,000 (in the account's currency), the limit is lifted.
+  const accountLimit = totalDeposits.greaterThanOrEqualTo(1000) ? null : totalDeposits.times(100);
 
   return {
     balance: account.balance,

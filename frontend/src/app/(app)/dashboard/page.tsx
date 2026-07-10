@@ -96,8 +96,9 @@ export default function DashboardPage() {
   const timeGreeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   const balance = selectedAccount ? Number(selectedAccount.balance) : 0;
-  const accountLimit = wallet ? Number(wallet.accountLimit) : 0;
-  const limitProgress = accountLimit > 0 ? Math.min(100, (balance / accountLimit) * 100) : 0;
+  const isLimitUnlimited = wallet?.accountLimit === null;
+  const accountLimit = wallet && wallet.accountLimit !== null ? Number(wallet.accountLimit) : 0;
+  const limitProgress = isLimitUnlimited ? 100 : accountLimit > 0 ? Math.min(100, (balance / accountLimit) * 100) : 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -141,16 +142,20 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between text-sm">
             <span className="text-text-secondary">Account Limit</span>
             <span className="font-semibold text-text-primary font-mono">
-              {formatCurrency(balance, currency)} / {formatCurrency(accountLimit, currency)}
+              {formatCurrency(balance, currency)} / {isLimitUnlimited ? "Unlimited" : formatCurrency(accountLimit, currency)}
             </span>
           </div>
           <div className="mt-3 h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
             <div
-              className="h-full bg-primary transition-all duration-500"
+              className={`h-full transition-all duration-500 ${isLimitUnlimited ? "bg-green-400" : "bg-primary"}`}
               style={{ width: `${limitProgress}%` }}
             />
           </div>
-          <p className="mt-2 text-xs text-text-muted">Bot stops when balance reaches the limit.</p>
+          <p className="mt-2 text-xs text-text-muted">
+            {isLimitUnlimited
+              ? "Unlimited trading unlocked — no deposit cap applies."
+              : "Bot stops when balance reaches the limit."}
+          </p>
         </Card>
       )}
 

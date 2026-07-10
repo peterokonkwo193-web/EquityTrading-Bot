@@ -129,7 +129,7 @@ export default function TradingBotPage() {
     fetchWallet(accountId)
       .then((wallet) => {
         if (!cancelled) {
-          const limit = Number(wallet.accountLimit);
+          const limit = wallet.accountLimit === null ? Infinity : Number(wallet.accountLimit);
           setAccountLimit(limit);
           accountLimitRef.current = limit;
         }
@@ -508,7 +508,7 @@ export default function TradingBotPage() {
             />
             <div className="flex justify-between text-[11px] text-text-muted font-mono mt-0.5">
               <span>Available: <span className="text-gold">{formatCurrency(balance, currency)}</span></span>
-              <span>Limit: {formatCurrency(accountLimit, currency)}</span>
+              <span>Limit: {accountLimit === Infinity ? "Unlimited" : formatCurrency(accountLimit, currency)}</span>
             </div>
 
             {isBalanceInsufficient && (
