@@ -348,6 +348,7 @@ export default function AdminDashboardPage() {
                       <th className="py-2 font-semibold">Asset Details</th>
                       <th className="py-2 font-semibold">Fiat Credit Equivalent</th>
                       <th className="py-2 font-semibold">Requested</th>
+                      <th className="py-2 font-semibold">Proof</th>
                       <th className="py-2 font-semibold text-right">Review Action</th>
                     </tr>
                   </thead>
@@ -382,6 +383,19 @@ export default function AdminDashboardPage() {
                         </td>
                         <td className="py-4 text-xs text-text-secondary">
                           {new Date(tx.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="py-4">
+                          {tx.paymentProof ? (
+                            <button
+                              onClick={() => setSelectedProofUrl(tx.paymentProof)}
+                              className="inline-flex items-center gap-1 text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg transition-colors"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              View Proof
+                            </button>
+                          ) : (
+                            <span className="text-xs text-text-muted">No proof attached</span>
+                          )}
                         </td>
                         <td className="py-4 text-right">
                           <div className="inline-flex gap-2">
@@ -553,6 +567,33 @@ export default function AdminDashboardPage() {
           </Card>
         )}
       </div>
+
+      {/* Modal for Payment Proof Preview */}
+      {selectedProofUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setSelectedProofUrl(null)}
+        >
+          <div
+            className="w-full max-w-lg border border-white/10 bg-background-card rounded-2xl shadow-2xl p-4 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setSelectedProofUrl(null)}
+              className="absolute top-4 right-4 text-text-muted hover:text-text-primary transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <h3 className="text-sm font-bold text-text-primary mb-3">Payment Proof</h3>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={selectedProofUrl}
+              alt="Payment proof screenshot"
+              className="w-full rounded-xl border border-white/10 max-h-[70vh] object-contain bg-black/30"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Modal for Profit Adjustment */}
       {adjustingUser && (

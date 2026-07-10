@@ -35,14 +35,14 @@ const NETWORK_MAPPING: Record<string, string[]> = {
   TRX: ["Tron (TRC20)"],
   BNB: ["BSC (BEP20)"],
   USDT: ["Tron (TRC20)", "Ethereum (ERC20)", "BSC (BEP20)"],
-  USDC: ["Ethereum (ERC20)", "BSC (BEP20)", "Tron (TRC20)"],
+  USDC: ["Ethereum (ERC20)", "BSC (BEP20)"],
 };
 
 const DEPOSIT_ADDRESSES: Record<string, string> = {
-  "Bitcoin Native": "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
-  "Ethereum (ERC20)": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
-  "Tron (TRC20)": "TYHC5R471Vb94Nf3885Gf9d7H5Rk69TfbK",
-  "BSC (BEP20)": "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
+  "Bitcoin Native": "bc1qrhzw6dq240nt0r267j9r0alj9ecaqelmp9e7dn",
+  "Ethereum (ERC20)": "0xeDfD84Ed03178bFCa081D89B7d98064cD28CDdeF",
+  "Tron (TRC20)": "TACTvvULH7gaU5dfjCoFgztr48qk2PRG8Y",
+  "BSC (BEP20)": "0xeDfD84Ed03178bFCa081D89B7d98064cD28CDdeF",
 };
 
 export default function WalletPage() {
