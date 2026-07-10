@@ -154,7 +154,6 @@ export default function WalletPage() {
         network: depNetwork,
         paymentProof,
       });
-      status.success("Deposit request submitted. Pending admin review.");
       setDepAmount("");
       setPaymentProof("");
       setProofFileName("");
@@ -306,82 +305,70 @@ export default function WalletPage() {
               <p className="text-xs text-text-muted mt-1">Your deposit and withdrawal history will appear here.</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
-              {wallet.fundingHistory.map((tx: WalletTransaction) => {
-                const isDep = tx.type === "DEPOSIT";
-                const isPending = tx.status === "PENDING";
-                const isApproved = tx.status === "APPROVED";
-                const isRejected = tx.status === "REJECTED";
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-white/10 text-text-muted">
+                  <th className="py-2 pr-4 font-medium">Date</th>
+                  <th className="py-2 pr-4 font-medium">Type</th>
+                  <th className="py-2 pr-4 font-medium">Asset</th>
+                  <th className="py-2 pr-4 font-medium">Network</th>
+                  <th className="py-2 pr-4 font-medium">Amount</th>
+                  <th className="py-2 pr-4 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {wallet.fundingHistory.map((tx: WalletTransaction) => {
+                  const isDep = tx.type === "DEPOSIT";
+                  const isPending = tx.status === "PENDING";
+                  const isApproved = tx.status === "APPROVED";
+                  const isRejected = tx.status === "REJECTED";
 
-                return (
-                  <div
-                    key={tx.id}
-                    className={`flex items-center justify-between gap-4 rounded-xl border p-4 transition-all ${
-                      isPending
-                        ? "border-amber-500/10 bg-amber-500/[0.02] hover:bg-amber-500/[0.04]"
-                        : isApproved
-                        ? "border-white/5 bg-white/[0.01] hover:bg-white/[0.03]"
-                        : "border-red-500/10 bg-red-500/[0.02] hover:bg-red-500/[0.04]"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 shrink-0">
-                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center border shrink-0 ${
-                        isDep
-                          ? "bg-green-500/10 text-green-400 border-green-500/20"
-                          : "bg-red-500/10 text-red-400 border-red-500/20"
-                      }`}>
-                        {isDep ? <ArrowDownLeft className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-semibold text-text-primary">
+                  return (
+                    <tr key={tx.id} className="border-b border-white/5">
+                      <td className="py-3 pr-4 text-text-secondary whitespace-nowrap">
+                        {new Date(tx.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <span className={`inline-flex items-center gap-1 font-semibold ${isDep ? "text-green-400" : "text-rose-400"}`}>
+                          {isDep ? <ArrowDownLeft className="h-3.5 w-3.5" /> : <ArrowUpRight className="h-3.5 w-3.5" />}
                           {isDep ? "Deposit" : "Withdrawal"}
                         </span>
-                        <span className="text-[10px] text-text-muted truncate max-w-[120px]">
-                          {tx.network}
+                      </td>
+                      <td className="py-3 pr-4 text-text-primary">
+                        <span className="flex items-center gap-1.5 font-mono">
+                          <CryptoIcon symbol={tx.asset} className="h-4 w-4" />
+                          {parseFloat(tx.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} {tx.asset}
                         </span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-center flex-1 min-w-0">
-                      <span className="flex items-center gap-1.5 text-sm font-bold font-mono text-text-primary">
-                        <CryptoIcon symbol={tx.asset} className="h-4 w-4" />
-                        {parseFloat(tx.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} {tx.asset}
-                      </span>
-                      <span className="text-[11px] text-text-secondary">
-                        ≈ {formatCurrency(tx.fiatAmount, wallet.currency)}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      {isPending && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1 rounded-lg">
-                          <Clock className="h-3 w-3" />
-                          Pending Review
-                        </span>
-                      )}
-                      {isApproved && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-400 bg-green-400/10 border border-green-400/20 px-2.5 py-1 rounded-lg">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Completed
-                        </span>
-                      )}
-                      {isRejected && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-400 bg-red-400/10 border border-red-400/20 px-2.5 py-1 rounded-lg">
-                          <XCircle className="h-3 w-3" />
-                          Rejected
-                        </span>
-                      )}
-                      <span className="text-[10px] text-text-muted font-mono">
-                        {new Date(tx.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-                      </span>
-                      <span className="text-[10px] text-text-muted font-mono">
-                        {new Date(tx.createdAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                      </td>
+                      <td className="py-3 pr-4 text-text-secondary">{tx.network}</td>
+                      <td className="py-3 pr-4 text-text-primary font-mono">
+                        {formatCurrency(tx.fiatAmount, wallet.currency)}
+                      </td>
+                      <td className="py-3 pr-4">
+                        {isPending && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1 rounded-lg">
+                            <Clock className="h-3 w-3" />
+                            Pending
+                          </span>
+                        )}
+                        {isApproved && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-400 bg-green-400/10 border border-green-400/20 px-2.5 py-1 rounded-lg">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Completed
+                          </span>
+                        )}
+                        {isRejected && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-400 bg-red-400/10 border border-red-400/20 px-2.5 py-1 rounded-lg">
+                            <XCircle className="h-3 w-3" />
+                            Rejected
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           )}
         </div>
       </Card>

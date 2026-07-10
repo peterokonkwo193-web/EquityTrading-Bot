@@ -11,13 +11,12 @@ import { Button } from "@/components/ui/Button";
 import { StatusBanner } from "@/components/status/StatusBanner";
 import { useStatus } from "@/hooks/useStatus";
 import { registerSchema, RegisterFormInput } from "@/lib/validators/register";
-import { useAuth } from "@/context/AuthContext";
+import { registerUser } from "@/lib/endpoints";
 import { ApiError } from "@/lib/apiClient";
 
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register: registerAccount } = useAuth();
   const status = useStatus();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -34,8 +33,17 @@ export default function RegisterPage() {
   const onSubmit = async (values: RegisterFormInput) => {
     status.clear();
     try {
-      await registerAccount(values.name, values.email, values.password, values.currency);
-      router.push("/dashboard");
+      const { user, verificationCode } = await registerUser({
+        name: values.name,
+        email: values.email,
+        password: values.password,
+        currency: values.currency,
+      });
+      sessionStorage.setItem(
+        "pending-verification",
+        JSON.stringify({ email: user.email, code: verificationCode })
+      );
+      router.push("/verify-email");
     } catch (err) {
       const message = err instanceof ApiError ? err.message : "Registration failed. Please try again.";
       status.error(message);

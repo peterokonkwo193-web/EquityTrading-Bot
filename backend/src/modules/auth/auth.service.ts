@@ -8,6 +8,11 @@ import { createDefaultAccount } from "../accounts/account.service";
 import { RegisterInput } from "./auth.schema";
 
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
+const VERIFICATION_CODE_TTL_MS = 15 * 60 * 1000;
+
+function generateVerificationCode() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
 
 function toPublicUser(user: {
   id: string;
@@ -38,6 +43,7 @@ export async function registerUser(input: RegisterInput) {
   }
 
   const passwordHash = await hashPassword(input.password);
+  const verificationCode = generateVerificationCode();
 
   const user = await prisma.user.create({
     data: {
@@ -45,16 +51,17 @@ export async function registerUser(input: RegisterInput) {
       passwordHash,
       name: input.name,
       currency: input.currency,
-      emailVerified: true,
+      verificationCode,
+      verificationExpiresAt: new Date(Date.now() + VERIFICATION_CODE_TTL_MS),
       settings: { create: {} },
     },
   });
 
   await createDefaultAccount(user.id, input.currency);
 
-  const token = signAccessToken({ userId: user.id, email: user.email, role: user.role });
+  logger.info(`[simulated email] Verification code for ${user.email}: ${verificationCode}`);
 
-  return { user: toPublicUser(user), token };
+  return { user: toPublicUser(user), verificationCode };
 }
 
 export async function verifyEmail(email: string, code: string) {
@@ -87,6 +94,10 @@ export async function loginUser(email: string, password: string) {
   const isValid = await comparePassword(password, user.passwordHash);
   if (!isValid) {
     throw new AppError("Invalid email or password", 401);
+  }
+
+  if (!user.emailVerified) {
+    throw new AppError("Please verify your email before logging in", 403);
   }
 
   const token = signAccessToken({ userId: user.id, email: user.email, role: user.role });

@@ -24,9 +24,8 @@ function setSessionCookie(res: Response, token: string, rememberMe: boolean) {
 }
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
-  const { user, token } = await registerUser(req.body);
-  setSessionCookie(res, token, false);
-  sendSuccess(res, { user, token }, 201);
+  const { user, verificationCode } = await registerUser(req.body);
+  sendSuccess(res, { user, verificationCode }, 201);
 });
 
 export const verifyEmailHandler = asyncHandler(async (req: Request, res: Response) => {
