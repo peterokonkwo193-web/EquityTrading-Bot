@@ -16,6 +16,13 @@ export type StartTradeInput = z.infer<typeof startTradeSchema>;
 export const settleBotTradeSchema = z.object({
   profitLoss: z.number(),
   note: z.string().max(200).optional(),
+  market: z.string().min(1),
+  assetClass: z.enum(["CRYPTO", "FOREX"]),
+  direction: z.enum(["BUY", "SELL"]),
+  amount: z.number().positive(),
+  entryPrice: z.number().optional(),
+  exitPrice: z.number().optional(),
+  durationSeconds: z.number().int().positive().optional(),
 });
 
 export type SettleBotTradeInput = z.infer<typeof settleBotTradeSchema>;

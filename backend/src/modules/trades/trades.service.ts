@@ -177,6 +177,8 @@ export async function settleBotTrade(
   const isWin = !pnl.isNegative();
   await ensureTradingStats(accountId);
 
+  const now = new Date();
+
   const [updatedAccount] = await prisma.$transaction([
     prisma.account.update({
       where: { id: accountId },
@@ -197,6 +199,23 @@ export async function settleBotTrade(
         type: "TRADE_PNL",
         amount: pnl,
         status: "COMPLETED",
+      },
+    }),
+    prisma.simulatedTrade.create({
+      data: {
+        accountId,
+        market: input.market,
+        assetClass: input.assetClass,
+        direction: input.direction,
+        amount: new Prisma.Decimal(input.amount),
+        profitLoss: pnl,
+        status: "CLOSED",
+        durationSeconds: input.durationSeconds ?? 20,
+        openedAt: now,
+        closesAt: now,
+        closedAt: now,
+        entryPrice: input.entryPrice !== undefined ? new Prisma.Decimal(input.entryPrice) : undefined,
+        exitPrice: input.exitPrice !== undefined ? new Prisma.Decimal(input.exitPrice) : undefined,
       },
     }),
   ]);

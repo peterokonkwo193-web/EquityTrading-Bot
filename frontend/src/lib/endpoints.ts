@@ -56,7 +56,20 @@ export const fetchTradeHistory = (accountId: string, limit = 50) =>
   apiRequest<SimulatedTrade[]>(`/accounts/${accountId}/trades?limit=${limit}`);
 export const fetchTradingStats = (accountId: string) =>
   apiRequest<TradingStats>(`/accounts/${accountId}/trades/stats`);
-export const settleBotTrade = (accountId: string, input: { profitLoss: number; note?: string }) =>
+export const settleBotTrade = (
+  accountId: string,
+  input: {
+    profitLoss: number;
+    note?: string;
+    market: string;
+    assetClass: "CRYPTO" | "FOREX";
+    direction: "BUY" | "SELL";
+    amount: number;
+    entryPrice?: number;
+    exitPrice?: number;
+    durationSeconds?: number;
+  }
+) =>
   apiRequest<{ balance: string; profitLoss: string }>(`/accounts/${accountId}/trades/settle`, {
     method: "POST",
     body: input,

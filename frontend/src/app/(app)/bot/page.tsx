@@ -295,6 +295,13 @@ export default function TradingBotPage() {
         await settleBotTrade(accountId, {
           profitLoss: finalProfitLoss,
           note: `AI Trading Engine: ${direction} ${selectedAsset} P&L`,
+          market: selectedAsset,
+          assetClass: activeMarket === "crypto" ? "CRYPTO" : "FOREX",
+          direction,
+          amount: currentAmount,
+          entryPrice,
+          exitPrice,
+          durationSeconds: duration,
         });
         await refreshAccounts();
       } catch (e) {
