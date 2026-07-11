@@ -269,7 +269,7 @@ export default function WalletPage() {
 
       {/* Action Buttons */}
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Button variant="gold" className="w-full" onClick={() => setIsDepositOpen(true)}>
+        <Button variant="primary" className="w-full" onClick={() => setIsDepositOpen(true)}>
           <ArrowDownLeft className="h-4 w-4" />
           Deposit
         </Button>
@@ -478,7 +478,7 @@ export default function WalletPage() {
 
           <StatusBanner status={status.status} />
 
-          <Button type="submit" variant="gold" className="w-full" isLoading={isSubmitting} disabled={isLoading}>
+          <Button type="submit" variant="primary" className="w-full" isLoading={isSubmitting} disabled={isLoading}>
             Verify & Submit Deposit
           </Button>
         </form>

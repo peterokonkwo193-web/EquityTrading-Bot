@@ -81,7 +81,9 @@ export async function verifyEmail(email: string, code: string) {
     data: { emailVerified: true, verificationCode: null, verificationExpiresAt: null },
   });
 
-  return toPublicUser(updated);
+  const token = signAccessToken({ userId: updated.id, email: updated.email, role: updated.role });
+
+  return { user: toPublicUser(updated), token };
 }
 
 export async function loginUser(email: string, password: string) {

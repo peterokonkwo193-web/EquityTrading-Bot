@@ -8,8 +8,7 @@ import {
   FOREX_MARKETS,
   PROFIT_PCT_MIN,
   PROFIT_PCT_MAX,
-  LOSS_PCT_MIN,
-  LOSS_PCT_MAX,
+  LOSS_RATIO,
   TRADE_DURATION_SECONDS,
 } from "./trades.constants";
 
@@ -20,7 +19,8 @@ function randomBetween(min: number, max: number) {
 function computeProfitLoss(amount: number): number {
   const winProbability = 0.85 + Math.random() * 0.10; // Fluctuate between 85% and 95%
   const isWin = Math.random() < winProbability;
-  const pct = isWin ? randomBetween(PROFIT_PCT_MIN, PROFIT_PCT_MAX) : -randomBetween(LOSS_PCT_MIN, LOSS_PCT_MAX);
+  const profitPct = randomBetween(PROFIT_PCT_MIN, PROFIT_PCT_MAX);
+  const pct = isWin ? profitPct : -(profitPct * LOSS_RATIO);
   const raw = Math.round(amount * pct * 100) / 100;
   // Guarantee at least $1 of movement either way, however small the trade amount.
   return Math.abs(raw) < 1 ? (isWin ? 1 : -1) : raw;

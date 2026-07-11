@@ -344,12 +344,13 @@ export default function AdminDashboardPage() {
                 <table className="w-full text-left text-sm border-collapse">
                   <thead>
                     <tr className="border-b border-white/10 text-text-secondary text-xs uppercase tracking-wider">
-                      <th className="py-2 font-semibold">User / Account</th>
-                      <th className="py-2 font-semibold">Asset Details</th>
-                      <th className="py-2 font-semibold">Fiat Credit Equivalent</th>
-                      <th className="py-2 font-semibold">Requested</th>
+                      <th className="py-2 font-semibold">User</th>
+                      <th className="py-2 font-semibold">Amount</th>
+                      <th className="py-2 font-semibold">Asset</th>
+                      <th className="py-2 font-semibold">Network</th>
+                      <th className="py-2 font-semibold">Date</th>
                       <th className="py-2 font-semibold">Proof</th>
-                      <th className="py-2 font-semibold text-right">Review Action</th>
+                      <th className="py-2 font-semibold text-right">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -368,18 +369,14 @@ export default function AdminDashboardPage() {
                             </span>
                           </div>
                         </td>
-                        <td className="py-4">
-                          <div className="flex flex-col">
-                            <span className="font-semibold text-text-primary">
-                              {tx.amount} {tx.asset}
-                            </span>
-                            <span className="text-xs text-text-secondary">
-                              Network: {tx.network}
-                            </span>
-                          </div>
-                        </td>
                         <td className="py-4 font-bold text-green-400">
                           {formatCurrency(tx.fiatAmount, tx.account?.currency || "USD")}
+                        </td>
+                        <td className="py-4 font-semibold text-text-primary">
+                          {tx.amount} {tx.asset}
+                        </td>
+                        <td className="py-4 text-xs text-text-secondary">
+                          {tx.network}
                         </td>
                         <td className="py-4 text-xs text-text-secondary">
                           {new Date(tx.createdAt).toLocaleDateString()}
@@ -404,7 +401,7 @@ export default function AdminDashboardPage() {
                               className="inline-flex items-center gap-1 text-xs font-semibold bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 px-3 py-1.5 rounded-lg transition-colors"
                             >
                               <Check className="h-3.5 w-3.5" />
-                              Approve
+                              Accept
                             </button>
                             <button
                               onClick={() => handleReview(tx.id, "REJECTED")}

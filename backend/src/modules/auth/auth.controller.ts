@@ -30,8 +30,9 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
 export const verifyEmailHandler = asyncHandler(async (req: Request, res: Response) => {
   const { email, code } = req.body;
-  const user = await verifyEmail(email, code);
-  sendSuccess(res, user);
+  const { user, token } = await verifyEmail(email, code);
+  setSessionCookie(res, token, false);
+  sendSuccess(res, { user, token });
 });
 
 export const login = asyncHandler(async (req: Request, res: Response) => {

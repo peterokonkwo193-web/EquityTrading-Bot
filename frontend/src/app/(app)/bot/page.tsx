@@ -273,7 +273,9 @@ export default function TradingBotPage() {
     // Calculate final win or loss (win rate fluctuates dynamically between 85% and 95%)
     const winProbability = 0.85 + Math.random() * 0.10;
     const isWin = Math.random() < winProbability;
-    const returnPct = isWin ? (1.0 + Math.random() * 2.0) : -(0.8 + Math.random() * 1.7);
+    // Losses are always sized at 30% of what the equivalent profit would be.
+    const profitPct = 1.0 + Math.random() * 2.0;
+    const returnPct = isWin ? profitPct : -(profitPct * 0.3);
     const rawProfitLoss = Math.round(currentAmount * (returnPct / 100) * 100) / 100;
     // Guarantee at least $1 of movement either way, however small the trade amount.
     const finalProfitLoss = Math.abs(rawProfitLoss) < 1 ? (isWin ? 1 : -1) : rawProfitLoss;

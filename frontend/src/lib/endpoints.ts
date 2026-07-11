@@ -18,7 +18,7 @@ export const registerUser = (input: { name: string; email: string; password: str
   apiRequest<{ user: User; verificationCode: string }>("/auth/register", { method: "POST", body: input });
 
 export const verifyEmail = (email: string, code: string) =>
-  apiRequest<User>("/auth/verify-email", { method: "POST", body: { email, code } });
+  apiRequest<{ user: User; token: string }>("/auth/verify-email", { method: "POST", body: { email, code } });
 
 export const loginUser = (email: string, password: string, rememberMe: boolean) =>
   apiRequest<{ token: string; user: User }>("/auth/login", {

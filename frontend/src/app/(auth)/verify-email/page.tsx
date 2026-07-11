@@ -13,10 +13,12 @@ import { useStatus } from "@/hooks/useStatus";
 import { verifyEmailSchema, VerifyEmailFormInput } from "@/lib/validators/register";
 import { verifyEmail } from "@/lib/endpoints";
 import { ApiError } from "@/lib/apiClient";
+import { useAuth } from "@/context/AuthContext";
 
 export default function VerifyEmailPage() {
   const router = useRouter();
   const status = useStatus();
+  const { setUser } = useAuth();
   const [email, setEmail] = useState<string | null>(null);
   const [simulatedCode, setSimulatedCode] = useState<string | null>(null);
 
@@ -47,10 +49,14 @@ export default function VerifyEmailPage() {
       return;
     }
     try {
-      await verifyEmail(email, values.code);
+      const { user, token } = await verifyEmail(email, values.code);
       sessionStorage.removeItem("pending-verification");
-      status.success("Email verified. You can now log in.");
-      setTimeout(() => router.replace("/login"), 1200);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("auth_token", token);
+      }
+      setUser(user);
+      status.success("Email verified. Redirecting to your dashboard...");
+      setTimeout(() => router.replace("/dashboard"), 800);
     } catch (err) {
       status.error(err instanceof ApiError ? err.message : "Verification failed. Please try again.");
     }

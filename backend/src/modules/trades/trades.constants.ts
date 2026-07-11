@@ -9,6 +9,6 @@ export const TRADE_DURATION_SECONDS = 20;
 export const WIN_PROBABILITY = 0.85;
 export const PROFIT_PCT_MIN = 0.01;
 export const PROFIT_PCT_MAX = 0.02;
-export const LOSS_PCT_MIN = 0.008;
-export const LOSS_PCT_MAX = 0.017;
+// Losses are always sized at this fraction of what the equivalent profit would be.
+export const LOSS_RATIO = 0.3;
 
