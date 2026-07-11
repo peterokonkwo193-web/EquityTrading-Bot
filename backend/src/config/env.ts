@@ -11,6 +11,7 @@ const envSchema = z.object({
   FRONTEND_URL: z.string().default("http://localhost:3000"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   ENCRYPTION_KEY: z.string().min(32, "ENCRYPTION_KEY must be exactly 32 characters").default("dev-only-encryption-key-change-me"),
+  RESEND_API_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

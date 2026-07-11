@@ -39,10 +39,11 @@ export default function RegisterPage() {
         password: values.password,
         currency: values.currency,
       });
-      sessionStorage.setItem(
-        "pending-verification",
-        JSON.stringify({ email: user.email, code: verificationCode })
-      );
+      sessionStorage.setItem("pending-verification-email", user.email);
+      if (verificationCode) {
+        // Real email delivery isn't available yet - fall back to showing the code.
+        sessionStorage.setItem("pending-verification-code", verificationCode);
+      }
       router.push("/verify-email");
     } catch (err) {
       const message = err instanceof ApiError ? err.message : "Registration failed. Please try again.";

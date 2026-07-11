@@ -20,7 +20,7 @@ export default function VerifyEmailPage() {
   const status = useStatus();
   const { setUser } = useAuth();
   const [email, setEmail] = useState<string | null>(null);
-  const [simulatedCode, setSimulatedCode] = useState<string | null>(null);
+  const [fallbackCode, setFallbackCode] = useState<string | null>(null);
 
   const {
     register,
@@ -33,12 +33,14 @@ export default function VerifyEmailPage() {
   });
 
   useEffect(() => {
-    const raw = sessionStorage.getItem("pending-verification");
-    if (raw) {
-      const { email, code } = JSON.parse(raw) as { email: string; code: string };
-      setEmail(email);
-      setSimulatedCode(code);
-      setValue("code", code, { shouldValidate: true });
+    const storedEmail = sessionStorage.getItem("pending-verification-email");
+    if (storedEmail) {
+      setEmail(storedEmail);
+    }
+    const storedCode = sessionStorage.getItem("pending-verification-code");
+    if (storedCode) {
+      setFallbackCode(storedCode);
+      setValue("code", storedCode, { shouldValidate: true });
     }
   }, [setValue]);
 
@@ -50,7 +52,8 @@ export default function VerifyEmailPage() {
     }
     try {
       const { user, token } = await verifyEmail(email, values.code);
-      sessionStorage.removeItem("pending-verification");
+      sessionStorage.removeItem("pending-verification-email");
+      sessionStorage.removeItem("pending-verification-code");
       if (typeof window !== "undefined") {
         localStorage.setItem("auth_token", token);
       }
@@ -69,13 +72,16 @@ export default function VerifyEmailPage() {
           <MailCheck className="h-10 w-10 text-gold" />
           <h1 className="text-xl font-semibold text-text-primary">Verify your email</h1>
           <p className="text-center text-sm text-text-secondary">
-            {email ? `We sent a verification code to ${email}` : "Enter the verification code sent to your email"}
+            {email
+              ? `We sent a verification code to ${email}. Check your inbox (and spam folder).`
+              : "Enter the verification code sent to your email"}
           </p>
         </div>
 
-        {simulatedCode && (
+        {fallbackCode && (
           <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-center text-sm text-text-secondary">
-            Security code (Development Override): <span className="font-semibold text-text-primary">{simulatedCode}</span>
+            Email delivery isn&apos;t set up yet, so here&apos;s your code:{" "}
+            <span className="font-semibold text-text-primary">{fallbackCode}</span>
           </div>
         )}
 

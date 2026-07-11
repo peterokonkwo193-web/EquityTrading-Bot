@@ -5,6 +5,7 @@ import { signAccessToken } from "../../utils/jwt";
 import { AppError } from "../../utils/AppError";
 import { logger } from "../../lib/logger";
 import { createDefaultAccount } from "../accounts/account.service";
+import { sendVerificationEmail } from "../../lib/email";
 import { RegisterInput } from "./auth.schema";
 
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
@@ -59,9 +60,14 @@ export async function registerUser(input: RegisterInput) {
 
   await createDefaultAccount(user.id, input.currency);
 
-  logger.info(`[simulated email] Verification code for ${user.email}: ${verificationCode}`);
+  const emailDelivered = await sendVerificationEmail(user.email, verificationCode);
 
-  return { user: toPublicUser(user), verificationCode };
+  // If real delivery isn't configured/working yet (e.g. no verified sending
+  // domain), fall back to returning the code so the flow still works.
+  return {
+    user: toPublicUser(user),
+    verificationCode: emailDelivered ? undefined : verificationCode,
+  };
 }
 
 export async function verifyEmail(email: string, code: string) {
