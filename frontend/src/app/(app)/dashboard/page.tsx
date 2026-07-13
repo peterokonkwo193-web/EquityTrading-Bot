@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Wallet, TrendingUp, Activity, Target, CheckCircle2, XCircle,
-  Shield, Lock, BadgeCheck
-} from "lucide-react";
+import { Wallet, TrendingUp, Activity, Target, CheckCircle2, XCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useAccount } from "@/context/AccountContext";
 import { useTradingStats } from "@/hooks/useTradingStats";
@@ -30,13 +27,6 @@ function buildPerformanceSeries(trades: SimulatedTrade[]): LineAreaChartPoint[] 
     return { label: `#${i + 1}`, value: Math.round(running * 100) / 100 };
   });
 }
-
-const PROTECTION_BADGES = [
-  { icon: Shield, title: "Bank-grade", subtitle: "256-bit SSL" },
-  { icon: Lock, title: "Cold storage", subtitle: "98% offline" },
-  { icon: BadgeCheck, title: "Audited", subtitle: "Q4 2025" },
-  { icon: Activity, title: "24/7 Monitoring", subtitle: "Real-time risk engine" },
-];
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -212,24 +202,6 @@ export default function DashboardPage() {
 
       {/* Live Market Chart */}
       <LiveMarketChart />
-
-      {/* Your Funds Are Protected */}
-      <Card>
-        <h3 className="text-center text-xs font-bold uppercase tracking-widest text-text-secondary mb-5">
-          Your Funds Are Protected
-        </h3>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {PROTECTION_BADGES.map(({ icon: Icon, title, subtitle }) => (
-            <div key={title} className="flex flex-col items-center text-center gap-2 rounded-xl bg-white/[0.02] border border-white/5 p-4">
-              <div className="h-11 w-11 rounded-full flex items-center justify-center bg-blue-500/10 text-blue-400">
-                <Icon className="h-5 w-5" />
-              </div>
-              <p className="text-sm font-semibold text-text-primary">{title}</p>
-              <p className="text-xs text-text-muted">{subtitle}</p>
-            </div>
-          ))}
-        </div>
-      </Card>
 
       {/* Testimonials */}
       <Testimonials />
