@@ -218,7 +218,7 @@ export default function DashboardPage() {
         <h3 className="text-center text-xs font-bold uppercase tracking-widest text-text-secondary mb-5">
           Your Funds Are Protected
         </h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {PROTECTION_BADGES.map(({ icon: Icon, title, subtitle }) => (
             <div key={title} className="flex flex-col items-center text-center gap-2 rounded-xl bg-white/[0.02] border border-white/5 p-4">
               <div className="h-11 w-11 rounded-full flex items-center justify-center bg-blue-500/10 text-blue-400">

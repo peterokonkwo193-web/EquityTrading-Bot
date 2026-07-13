@@ -1,69 +1,67 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, ArrowDownRight, Activity } from "lucide-react";
 import { CryptoIcon } from "@/components/ui/CryptoIcon";
 import { Card } from "@/components/ui/Card";
 import { fetchTicker } from "@/lib/endpoints";
 
-const POLL_INTERVAL_MS = 2000;
+const POLL_INTERVAL_MS = 4000;
 
 export function LiveMarketChart() {
-  const [prices, setPrices] = useState<Record<string, { price: number; changePct: number; prevPrice?: number }>>({});
+  const [prices, setPrices] = useState<Record<string, { price: number; changePct: number }>>({});
   const [flashStates, setFlashStates] = useState<Record<string, "up" | "down" | null>>({});
   const [activeTab, setActiveTab] = useState<"ALL" | "CRYPTO" | "FOREX">("ALL");
+  const pricesRef = useRef<Record<string, { price: number; changePct: number }>>({});
+  const isPollingRef = useRef(false);
+  const flashResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+
     const poll = async () => {
+      // Skip this tick if the previous poll is still in flight, to avoid
+      // overlapping cycles racing each other's flash-reset timeouts.
+      if (isPollingRef.current) return;
+      isPollingRef.current = true;
+
       try {
         const data = await fetchTicker();
         if (cancelled) return;
 
-        setPrices((prev) => {
-          const next = { ...prev };
-          const nextFlash: Record<string, "up" | "down" | null> = {};
+        const nextPrices: Record<string, { price: number; changePct: number }> = {};
+        const nextFlash: Record<string, "up" | "down" | null> = {};
 
-          data.forEach((entry) => {
-            const prevEntry = prev[entry.symbol];
-            const currentPrice = entry.price;
-            const prevPrice = prevEntry?.price ?? currentPrice;
+        data.forEach((entry) => {
+          const prevPrice = pricesRef.current[entry.symbol]?.price ?? entry.price;
+          // Generate slight simulated fluctuations for live visual effect between polls
+          const noise = (Math.random() - 0.5) * (entry.price * 0.0005);
+          const finalPrice = entry.price + noise;
 
-            // Generate slight simulated fluctuations for live visual effect between polls
-            const noise = (Math.random() - 0.5) * (currentPrice * 0.0005);
-            const finalPrice = currentPrice + noise;
+          if (finalPrice > prevPrice) {
+            nextFlash[entry.symbol] = "up";
+          } else if (finalPrice < prevPrice) {
+            nextFlash[entry.symbol] = "down";
+          }
 
-            if (finalPrice > prevPrice) {
-              nextFlash[entry.symbol] = "up";
-            } else if (finalPrice < prevPrice) {
-              nextFlash[entry.symbol] = "down";
-            }
-
-            next[entry.symbol] = {
-              price: finalPrice,
-              changePct: entry.changePct + (noise / currentPrice) * 100,
-              prevPrice,
-            };
-          });
-
-          // Trigger flash reset timeout
-          setFlashStates(nextFlash);
-          setTimeout(() => {
-            if (!cancelled) {
-              setFlashStates((current) => {
-                const reset = { ...current };
-                Object.keys(reset).forEach((k) => {
-                  reset[k] = null;
-                });
-                return reset;
-              });
-            }
-          }, 600);
-
-          return next;
+          nextPrices[entry.symbol] = {
+            price: finalPrice,
+            changePct: entry.changePct + (noise / entry.price) * 100,
+          };
         });
+
+        pricesRef.current = nextPrices;
+        setPrices(nextPrices);
+        setFlashStates(nextFlash);
+
+        if (flashResetTimeoutRef.current) clearTimeout(flashResetTimeoutRef.current);
+        flashResetTimeoutRef.current = setTimeout(() => {
+          if (!cancelled) setFlashStates({});
+        }, 600);
       } catch (err) {
         console.error("Failed to fetch live prices ticker", err);
+      } finally {
+        isPollingRef.current = false;
       }
     };
 
@@ -72,6 +70,7 @@ export function LiveMarketChart() {
     return () => {
       cancelled = true;
       clearInterval(interval);
+      if (flashResetTimeoutRef.current) clearTimeout(flashResetTimeoutRef.current);
     };
   }, []);
 

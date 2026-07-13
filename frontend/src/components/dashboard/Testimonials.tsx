@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Star, ChevronLeft, ChevronRight, Quote } from "lucide-react";
+import { Card } from "@/components/ui/Card";
 
 const TESTIMONIALS = [
   {
@@ -80,14 +81,14 @@ export function Testimonials() {
   const visible = TESTIMONIALS.slice(page * perPage, page * perPage + perPage);
 
   return (
-    <div className="flex flex-col gap-6">
+    <Card className="flex flex-col gap-6">
       {/* Section Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-xl font-bold text-text-primary">What Our Traders Say</h3>
           <p className="mt-1 text-sm text-text-secondary">Trusted by thousands of traders worldwide</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-end sm:self-auto">
           <button
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0}
@@ -106,7 +107,7 @@ export function Testimonials() {
       </div>
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {visible.map((t) => (
           <div
             key={t.id}
@@ -149,6 +150,6 @@ export function Testimonials() {
           />
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
