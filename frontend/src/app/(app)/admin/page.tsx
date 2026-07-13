@@ -341,73 +341,82 @@ export default function AdminDashboardPage() {
               ) : pendingDeposits.length === 0 ? (
                 <p className="text-center py-16 text-sm text-text-secondary">No pending deposits require review.</p>
               ) : (
-                <table className="w-full text-left text-sm border-collapse">
+                <table className="w-full min-w-[820px] text-left text-xs border-collapse table-fixed">
+                  <colgroup>
+                    <col className="w-[20%]" />
+                    <col className="w-[13%]" />
+                    <col className="w-[13%]" />
+                    <col className="w-[12%]" />
+                    <col className="w-[10%]" />
+                    <col className="w-[12%]" />
+                    <col className="w-[20%]" />
+                  </colgroup>
                   <thead>
-                    <tr className="border-b border-white/10 text-text-secondary text-xs uppercase tracking-wider">
-                      <th className="py-2 font-semibold">User</th>
-                      <th className="py-2 font-semibold">Amount</th>
-                      <th className="py-2 font-semibold">Asset</th>
-                      <th className="py-2 font-semibold">Network</th>
-                      <th className="py-2 font-semibold">Date</th>
-                      <th className="py-2 font-semibold">Proof</th>
-                      <th className="py-2 font-semibold text-right">Status</th>
+                    <tr className="border-b border-white/10 text-text-secondary text-[10px] uppercase tracking-wider">
+                      <th className="py-2 pr-2 font-semibold">User</th>
+                      <th className="py-2 pr-2 font-semibold">Amount</th>
+                      <th className="py-2 pr-2 font-semibold">Asset</th>
+                      <th className="py-2 pr-2 font-semibold">Network</th>
+                      <th className="py-2 pr-2 font-semibold">Date</th>
+                      <th className="py-2 pr-2 font-semibold">Proof</th>
+                      <th className="py-2 pr-2 font-semibold text-right">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {pendingDeposits.map((tx) => (
-                      <tr key={tx.id} className="hover:bg-white/[0.01] transition-colors">
-                        <td className="py-4">
-                          <div className="flex flex-col">
-                            <span className="font-semibold text-text-primary">
+                      <tr key={tx.id} className="hover:bg-white/[0.01] transition-colors align-top">
+                        <td className="py-3 pr-2">
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-semibold text-text-primary text-xs truncate">
                               {tx.account?.user?.name || "Unknown User"}
                             </span>
-                            <span className="text-xs text-text-secondary">
+                            <span className="text-[10px] text-text-secondary truncate">
                               {tx.account?.user?.email}
                             </span>
-                            <span className="text-[10px] font-mono text-text-secondary mt-0.5">
-                              ACC: {tx.account?.accountNumber}
+                            <span className="text-[9px] font-mono text-text-muted mt-0.5 truncate">
+                              {tx.account?.accountNumber}
                             </span>
                           </div>
                         </td>
-                        <td className="py-4 font-bold text-green-400">
+                        <td className="py-3 pr-2 font-bold text-green-400 text-xs">
                           {formatCurrency(tx.fiatAmount, tx.account?.currency || "USD")}
                         </td>
-                        <td className="py-4 font-semibold text-text-primary">
+                        <td className="py-3 pr-2 text-text-primary text-xs truncate">
                           {tx.amount} {tx.asset}
                         </td>
-                        <td className="py-4 text-xs text-text-secondary">
+                        <td className="py-3 pr-2 text-[10px] text-text-secondary truncate">
                           {tx.network}
                         </td>
-                        <td className="py-4 text-xs text-text-secondary">
+                        <td className="py-3 pr-2 text-[10px] text-text-secondary whitespace-nowrap">
                           {new Date(tx.createdAt).toLocaleDateString()}
                         </td>
-                        <td className="py-4">
+                        <td className="py-3 pr-2">
                           {tx.paymentProof ? (
                             <button
                               onClick={() => setSelectedProofUrl(tx.paymentProof)}
-                              className="inline-flex items-center gap-1 text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg transition-colors"
+                              className="inline-flex items-center gap-1 text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 px-2 py-1 rounded-lg transition-colors whitespace-nowrap"
                             >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                              View Proof
+                              <ExternalLink className="h-3 w-3" />
+                              View
                             </button>
                           ) : (
-                            <span className="text-xs text-text-muted">No proof attached</span>
+                            <span className="text-[10px] text-text-muted">None</span>
                           )}
                         </td>
-                        <td className="py-4 text-right">
-                          <div className="inline-flex gap-2">
+                        <td className="py-3 text-right">
+                          <div className="inline-flex gap-1.5">
                             <button
                               onClick={() => handleReview(tx.id, "APPROVED")}
-                              className="inline-flex items-center gap-1 text-xs font-semibold bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 px-3 py-1.5 rounded-lg transition-colors"
+                              className="inline-flex items-center gap-1 text-[10px] font-semibold bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 px-2 py-1 rounded-lg transition-colors whitespace-nowrap"
                             >
-                              <Check className="h-3.5 w-3.5" />
+                              <Check className="h-3 w-3" />
                               Accept
                             </button>
                             <button
                               onClick={() => handleReview(tx.id, "REJECTED")}
-                              className="inline-flex items-center gap-1 text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 px-3 py-1.5 rounded-lg transition-colors"
+                              className="inline-flex items-center gap-1 text-[10px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 px-2 py-1 rounded-lg transition-colors whitespace-nowrap"
                             >
-                              <X className="h-3.5 w-3.5" />
+                              <X className="h-3 w-3" />
                               Reject
                             </button>
                           </div>
@@ -439,62 +448,72 @@ export default function AdminDashboardPage() {
               ) : pendingWithdrawals.length === 0 ? (
                 <p className="text-center py-16 text-sm text-text-secondary">No pending withdrawals require review.</p>
               ) : (
-                <table className="w-full text-left text-sm border-collapse">
+                <table className="w-full min-w-[820px] text-left text-xs border-collapse table-fixed">
+                  <colgroup>
+                    <col className="w-[20%]" />
+                    <col className="w-[12%]" />
+                    <col className="w-[13%]" />
+                    <col className="w-[10%]" />
+                    <col className="w-[20%]" />
+                    <col className="w-[10%]" />
+                    <col className="w-[15%]" />
+                  </colgroup>
                   <thead>
-                    <tr className="border-b border-white/10 text-text-secondary text-xs uppercase tracking-wider">
-                      <th className="py-2 font-semibold">User / Account</th>
-                      <th className="py-2 font-semibold">Asset Details</th>
-                      <th className="py-2 font-semibold">Fiat Debit Equivalent</th>
-                      <th className="py-2 font-semibold">Destination Wallet</th>
-                      <th className="py-2 font-semibold text-right">Review Action</th>
+                    <tr className="border-b border-white/10 text-text-secondary text-[10px] uppercase tracking-wider">
+                      <th className="py-2 pr-2 font-semibold">User</th>
+                      <th className="py-2 pr-2 font-semibold">Amount</th>
+                      <th className="py-2 pr-2 font-semibold">Asset</th>
+                      <th className="py-2 pr-2 font-semibold">Network</th>
+                      <th className="py-2 pr-2 font-semibold">Destination</th>
+                      <th className="py-2 pr-2 font-semibold">Date</th>
+                      <th className="py-2 pr-2 font-semibold text-right">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {pendingWithdrawals.map((tx) => (
-                      <tr key={tx.id} className="hover:bg-white/[0.01] transition-colors">
-                        <td className="py-4">
-                          <div className="flex flex-col">
-                            <span className="font-semibold text-text-primary">
+                      <tr key={tx.id} className="hover:bg-white/[0.01] transition-colors align-top">
+                        <td className="py-3 pr-2">
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-semibold text-text-primary text-xs truncate">
                               {tx.account?.user?.name || "Unknown User"}
                             </span>
-                            <span className="text-xs text-text-secondary">
+                            <span className="text-[10px] text-text-secondary truncate">
                               {tx.account?.user?.email}
                             </span>
-                            <span className="text-[10px] font-mono text-text-secondary mt-0.5">
-                              ACC: {tx.account?.accountNumber}
+                            <span className="text-[9px] font-mono text-text-muted mt-0.5 truncate">
+                              {tx.account?.accountNumber}
                             </span>
                           </div>
                         </td>
-                        <td className="py-4">
-                          <div className="flex flex-col">
-                            <span className="font-semibold text-text-primary">
-                              {tx.amount} {tx.asset}
-                            </span>
-                            <span className="text-xs text-text-secondary">
-                              Network: {tx.network}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-4 font-bold text-red-400">
+                        <td className="py-3 pr-2 font-bold text-red-400 text-xs">
                           {formatCurrency(tx.fiatAmount, tx.account?.currency || "USD")}
                         </td>
-                        <td className="py-4 font-mono text-xs text-text-secondary max-w-[200px] truncate select-all" title={tx.destinationAddress}>
+                        <td className="py-3 pr-2 text-text-primary text-xs truncate">
+                          {tx.amount} {tx.asset}
+                        </td>
+                        <td className="py-3 pr-2 text-[10px] text-text-secondary truncate">
+                          {tx.network}
+                        </td>
+                        <td className="py-3 pr-2 font-mono text-[10px] text-text-secondary truncate select-all" title={tx.destinationAddress}>
                           {tx.destinationAddress}
                         </td>
-                        <td className="py-4 text-right">
-                          <div className="inline-flex gap-2">
+                        <td className="py-3 pr-2 text-[10px] text-text-secondary whitespace-nowrap">
+                          {new Date(tx.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 text-right">
+                          <div className="inline-flex gap-1.5">
                             <button
                               onClick={() => handleReview(tx.id, "APPROVED")}
-                              className="inline-flex items-center gap-1 text-xs font-semibold bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 px-3 py-1.5 rounded-lg transition-colors"
+                              className="inline-flex items-center gap-1 text-[10px] font-semibold bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 px-2 py-1 rounded-lg transition-colors whitespace-nowrap"
                             >
-                              <Check className="h-3.5 w-3.5" />
-                              Approve
+                              <Check className="h-3 w-3" />
+                              Accept
                             </button>
                             <button
                               onClick={() => handleReview(tx.id, "REJECTED")}
-                              className="inline-flex items-center gap-1 text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 px-3 py-1.5 rounded-lg transition-colors"
+                              className="inline-flex items-center gap-1 text-[10px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 px-2 py-1 rounded-lg transition-colors whitespace-nowrap"
                             >
-                              <X className="h-3.5 w-3.5" />
+                              <X className="h-3 w-3" />
                               Reject
                             </button>
                           </div>
