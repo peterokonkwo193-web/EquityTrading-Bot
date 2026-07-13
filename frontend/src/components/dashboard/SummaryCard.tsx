@@ -28,12 +28,12 @@ const VALUE_CLASSES = {
 export function SummaryCard({ icon: Icon, label, value, accent = "neutral" }: SummaryCardProps) {
   return (
     <Card hoverable className="flex items-center gap-4">
-      <div className={clsx("flex h-11 w-11 items-center justify-center rounded-xl", ACCENT_CLASSES[accent])}>
+      <div className={clsx("flex h-11 w-11 shrink-0 items-center justify-center rounded-xl", ACCENT_CLASSES[accent])}>
         <Icon className="h-5 w-5" />
       </div>
-      <div>
-        <p className="text-sm text-text-secondary">{label}</p>
-        <p className={clsx("text-lg font-semibold", VALUE_CLASSES[accent])}>{value}</p>
+      <div className="min-w-0">
+        <p className="text-sm text-text-secondary truncate">{label}</p>
+        <p className={clsx("text-lg font-semibold truncate", VALUE_CLASSES[accent])}>{value}</p>
       </div>
     </Card>
   );

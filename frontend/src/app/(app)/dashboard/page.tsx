@@ -139,7 +139,7 @@ export default function DashboardPage() {
       {/* Account Limit */}
       {wallet && (
         <Card>
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
             <span className="text-text-secondary">Account Limit</span>
             <span className="font-semibold text-text-primary font-mono">
               {formatCurrency(balance, currency)} / {isLimitUnlimited ? "Unlimited" : formatCurrency(accountLimit, currency)}
@@ -162,7 +162,7 @@ export default function DashboardPage() {
       {/* Market Sentiment */}
       {sentiment && (
         <Card>
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
             <span className="text-text-secondary">Market Sentiment</span>
             <span className={`font-semibold ${sentiment.label === "Bullish" ? "text-green-400" : "text-rose-400"}`}>
               {sentiment.label} {sentiment.confidence.toFixed(0)}%
@@ -176,21 +176,21 @@ export default function DashboardPage() {
       {isStatsLoading || !stats ? (
         <Skeleton className="h-24 w-full" />
       ) : (
-        <Card className="flex items-center gap-4">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl text-primary bg-primary-muted">
+        <Card className="flex flex-wrap items-center gap-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-primary bg-primary-muted">
             <Activity className="h-5 w-5" />
           </div>
-          <div className="flex flex-1 items-center justify-between gap-4">
-            <div>
-              <p className="text-sm text-text-secondary">Total Trades</p>
+          <div className="flex flex-1 flex-wrap items-center justify-between gap-3 min-w-0">
+            <div className="min-w-0">
+              <p className="text-sm text-text-secondary truncate">Total Trades</p>
               <p className="text-lg font-semibold text-text-primary">{stats.tradesCount}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1 text-xs font-semibold text-green-400 bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full">
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="flex items-center gap-1 text-xs font-semibold text-green-400 bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full whitespace-nowrap">
                 <CheckCircle2 className="h-3 w-3" />
                 W {stats.winCount}
               </span>
-              <span className="flex items-center gap-1 text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-full">
+              <span className="flex items-center gap-1 text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-full whitespace-nowrap">
                 <XCircle className="h-3 w-3" />
                 L {stats.tradesCount - stats.winCount}
               </span>

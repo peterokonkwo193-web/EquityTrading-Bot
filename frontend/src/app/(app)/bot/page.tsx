@@ -86,7 +86,6 @@ export default function TradingBotPage() {
   const [activeMarket, setActiveMarket] = useState<"crypto" | "forex" | null>(null);
   const [tradeAmount, setTradeAmount] = useState<string>("");
   const [isBotActive, setIsBotActive] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [stopRequested, setStopRequested] = useState(false);
 
   // Status Badge State
@@ -318,6 +317,18 @@ export default function TradingBotPage() {
     setCurrentTrade(null);
 
     addLog(`Position closed. Return: ${finalProfitLoss >= 0 ? "+" : ""}${formatCurrency(finalProfitLoss, currency)} (${returnPct.toFixed(2)}%)`);
+
+    // Stop immediately once the position is settled, instead of waiting
+    // through the cooldown below before the queued stop gets picked up.
+    if (stopRequestedRef.current) {
+      stopRequestedRef.current = false;
+      setStopRequested(false);
+      isBotActiveRef.current = false;
+      setIsBotActive(false);
+      setBotStatus("Idle");
+      addLog("Bot stopped successfully. Returned to idle.");
+      return;
+    }
 
     // Brief cooldown then chain next trade via ref (not state dependency)
     setBotStatus("Scanning");
@@ -591,19 +602,34 @@ export default function TradingBotPage() {
 
           {/* Status Card */}
           <Card className="p-6 flex flex-col items-center text-center gap-3 border border-white/10">
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-green-400 bg-green-500/10 border border-green-500/20 px-3 py-1 rounded-full">
-              <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-              Bot Running
-            </span>
+            {stopRequested ? (
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Stopping...
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-green-400 bg-green-500/10 border border-green-500/20 px-3 py-1 rounded-full">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+                Bot Running
+              </span>
+            )}
             <p className="text-sm font-semibold text-text-primary">
               Trading {activeMarket.toUpperCase()} · {formatCurrency(parseFloat(tradeAmount) || 0, currency)}/trade
             </p>
             <p className="text-xs font-medium text-gold">
-              {rotationMsg || "Scanning market structure..."}
+              {stopRequested
+                ? "Finishing the current position, then the bot will stop..."
+                : rotationMsg || "Scanning market structure..."}
             </p>
-            <Button variant="danger" onClick={handleStop} className="w-full max-w-xs">
+            <Button
+              variant="danger"
+              onClick={handleStop}
+              className="w-full max-w-xs"
+              disabled={stopRequested}
+              isLoading={stopRequested}
+            >
               <Square className="h-4 w-4" />
-              Stop Bot
+              {stopRequested ? "Stopping..." : "Stop Bot"}
             </Button>
           </Card>
         </div>
