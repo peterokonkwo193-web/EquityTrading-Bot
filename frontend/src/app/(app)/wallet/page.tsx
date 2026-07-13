@@ -233,13 +233,13 @@ export default function WalletPage() {
           )}
         </Card>
 
-        <Card className="flex flex-col justify-between p-5 border-l-4 border-l-green-500">
-          <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">Total Deposits</span>
+        <Card className="flex flex-col justify-between p-5 border-l-4 border-l-red-500">
+          <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">Total Withdrawals</span>
           {isLoading || !wallet ? (
             <Skeleton className="mt-2 h-8 w-28" />
           ) : (
-            <span className="mt-2 text-xl font-bold text-green-400">
-              {formatCurrency(wallet.totalDeposits, wallet.currency)}
+            <span className="mt-2 text-xl font-bold text-rose-400">
+              {formatCurrency(wallet.totalWithdrawals, wallet.currency)}
             </span>
           )}
         </Card>
@@ -255,13 +255,13 @@ export default function WalletPage() {
           )}
         </Card>
 
-        <Card className="flex flex-col justify-between p-5 border-l-4 border-l-red-500">
-          <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">Total Withdrawals</span>
+        <Card className="flex flex-col justify-between p-5 border-l-4 border-l-orange-500">
+          <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">Pending Withdrawals</span>
           {isLoading || !wallet ? (
             <Skeleton className="mt-2 h-8 w-28" />
           ) : (
-            <span className="mt-2 text-xl font-bold text-rose-400">
-              {formatCurrency(wallet.totalWithdrawals, wallet.currency)}
+            <span className="mt-2 text-xl font-bold text-orange-400">
+              {formatCurrency(wallet.pendingWithdrawals, wallet.currency)}
             </span>
           )}
         </Card>

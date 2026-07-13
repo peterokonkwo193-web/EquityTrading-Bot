@@ -1,56 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Wallet, TrendingUp, Activity, Target, CheckCircle2, XCircle } from "lucide-react";
+import { Wallet, TrendingUp, Activity, Target, CheckCircle2, XCircle, ShieldCheck, Lock, BadgeCheck, ActivitySquare } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useAccount } from "@/context/AccountContext";
 import { useTradingStats } from "@/hooks/useTradingStats";
-import { fetchTradeHistory, fetchWallet, fetchTicker } from "@/lib/endpoints";
-import { SimulatedTrade, Wallet as WalletType } from "@/types";
+import { fetchWallet, fetchTicker } from "@/lib/endpoints";
+import { Wallet as WalletType } from "@/types";
 import { formatCurrency } from "@/lib/currency";
 import { SummaryCard } from "@/components/dashboard/SummaryCard";
 import { PriceTicker } from "@/components/dashboard/PriceTicker";
 import { LiveMarketChart } from "@/components/dashboard/LiveMarketChart";
 import { Testimonials } from "@/components/dashboard/Testimonials";
-import { LineAreaChart, LineAreaChartPoint } from "@/components/charts/LineAreaChart";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
-
-function buildPerformanceSeries(trades: SimulatedTrade[]): LineAreaChartPoint[] {
-  const closed = trades
-    .filter((t) => t.status === "CLOSED" && t.closedAt)
-    .sort((a, b) => new Date(a.closedAt!).getTime() - new Date(b.closedAt!).getTime());
-
-  let running = 0;
-  return closed.map((t, i) => {
-    running += Number(t.profitLoss);
-    return { label: `#${i + 1}`, value: Math.round(running * 100) / 100 };
-  });
-}
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { selectedAccount, isLoading: isAccountLoading } = useAccount();
   const accountId = selectedAccount?.id ?? null;
   const { stats, isLoading: isStatsLoading } = useTradingStats(accountId);
-  const [performance, setPerformance] = useState<LineAreaChartPoint[]>([]);
   const [wallet, setWallet] = useState<WalletType | null>(null);
   const [sentiment, setSentiment] = useState<{ label: "Bullish" | "Bearish"; confidence: number } | null>(null);
-
-  useEffect(() => {
-    if (!accountId) return;
-    let cancelled = false;
-    fetchTradeHistory(accountId)
-      .then((trades) => {
-        if (!cancelled) setPerformance(buildPerformanceSeries(trades));
-      })
-      .catch(() => {
-        if (!cancelled) setPerformance([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [accountId, stats?.tradesCount]);
 
   useEffect(() => {
     if (!accountId) return;
@@ -189,22 +160,39 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      <Card>
-        <h3 className="mb-4 text-sm font-semibold text-text-secondary">Performance Chart</h3>
-        {performance.length === 0 ? (
-          <p className="py-8 text-center text-sm text-text-muted">
-            No trades yet. Start a trade to see your performance curve.
-          </p>
-        ) : (
-          <LineAreaChart data={performance} color="gold" valuePrefix={currency === "USD" ? "$" : ""} />
-        )}
-      </Card>
-
       {/* Live Market Chart */}
       <LiveMarketChart />
 
       {/* Testimonials */}
       <Testimonials />
+
+      {/* Funds Protection */}
+      <Card>
+        <h3 className="text-center text-sm font-bold tracking-widest text-text-secondary uppercase">
+          Your Funds Are Protected
+        </h3>
+        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {PROTECTION_BADGES.map((badge) => (
+            <div
+              key={badge.title}
+              className="flex flex-col items-center gap-2 rounded-2xl border border-white/5 bg-white/[0.02] p-6 text-center"
+            >
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-muted text-primary">
+                <badge.icon className="h-6 w-6" />
+              </div>
+              <p className="text-lg font-bold text-text-primary">{badge.title}</p>
+              <p className="text-sm text-text-secondary">{badge.subtitle}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }
+
+const PROTECTION_BADGES = [
+  { icon: ShieldCheck, title: "Bank-grade", subtitle: "256-bit SSL" },
+  { icon: Lock, title: "Cold storage", subtitle: "98% offline" },
+  { icon: BadgeCheck, title: "Audited", subtitle: "Q4 2025" },
+  { icon: ActivitySquare, title: "24/7 Monitoring", subtitle: "AI risk engine" },
+];
