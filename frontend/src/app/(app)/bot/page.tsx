@@ -270,17 +270,19 @@ export default function TradingBotPage() {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     if (!isBotActiveRef.current) return;
 
-    // Win/loss sequence designed to ensure a 35% loss rate (65% win rate)
-    // where any window of 5 trades has 1-2 losses, and any window of 10 trades has exactly 3 losses.
-    const winLossSequence = [true, true, false, true, true, false, true, true, true, false, true, true, false, true, true, false, true, true, true, false];
+    // Win/loss sequence designed to ensure a 10% loss rate (90% win rate, which is within the 85% to 95% range)
+    // where any window of 10 trades has exactly 1 loss, and any window of 20 trades has exactly 2 losses.
+    const winLossSequence = [true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, false, true, true, true, true];
     if (botStartIndexRef.current === -1) {
       botStartIndexRef.current = Math.floor(Math.random() * winLossSequence.length);
     }
     const isWin = winLossSequence[(botStartIndexRef.current + trades.length) % winLossSequence.length];
 
-    // Generate a profit/loss amount between $1.00 and $1.99 (1.something dollar)
-    const pnlAmount = Math.round((1.00 + Math.random() * 0.99) * 100) / 100;
-    const finalProfitLoss = isWin ? pnlAmount : -pnlAmount;
+    // Generate a loss amount between $1.00 and $1.99 (1.something dollar)
+    // and make the profit be exactly 35% of the loss (0.something dollar)
+    const lossAmount = Math.round((1.00 + Math.random() * 0.99) * 100) / 100;
+    const profitAmount = Math.round((lossAmount * 0.35) * 100) / 100;
+    const finalProfitLoss = isWin ? profitAmount : -lossAmount;
 
     // Calculate returnPct based on finalProfitLoss and currentAmount
     const returnPct = (finalProfitLoss / currentAmount) * 100;
@@ -414,11 +416,11 @@ export default function TradingBotPage() {
   const totalTrades = trades.length;
   const winningTrades = trades.filter((t) => t.profitLoss > 0).length;
   const losingTrades = totalTrades - winningTrades;
-  // Make winRate fluctuate dynamically between 65% and 75% (never showing 100% or dropping below 65%)
+  // Make winRate fluctuate dynamically between 85% and 95% (never showing 100% or dropping below 85%)
   const rawWinRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
-  const winRate = rawWinRate > 75 || rawWinRate === 0
-    ? 65 + (Math.sin(totalTrades || 1) * 5 + 5) // stable pseudo-random fluctuation between 65-75
-    : Math.max(65, rawWinRate);
+  const winRate = rawWinRate > 95 || rawWinRate === 0
+    ? 85 + (Math.sin(totalTrades || 1) * 5 + 5) // stable pseudo-random fluctuation between 85-95
+    : Math.max(85, rawWinRate);
 
   if (isAccountLoading) {
     return (
