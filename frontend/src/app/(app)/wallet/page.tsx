@@ -451,6 +451,9 @@ export default function WalletPage() {
               onChange={(e) => setDepAmount(e.target.value)}
               required
             />
+            <span className="text-[10px] text-text-muted">
+              Minimum deposit: {formatCurrency(100, selectedAccount.currency)}
+            </span>
           </div>
 
           <div className="flex flex-col gap-1.5">
