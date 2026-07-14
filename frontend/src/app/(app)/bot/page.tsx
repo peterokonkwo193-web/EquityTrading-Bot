@@ -528,9 +528,8 @@ export default function TradingBotPage() {
               value={tradeAmount}
               onChange={(e) => setTradeAmount(e.target.value)}
             />
-            <div className="flex justify-between text-[11px] text-text-muted font-mono mt-0.5">
+            <div className="text-[11px] text-text-muted font-mono mt-0.5">
               <span>Available: <span className="text-gold">{formatCurrency(balance, currency)}</span></span>
-              <span>Limit: {accountLimit === Infinity ? "Unlimited" : formatCurrency(accountLimit, currency)}</span>
             </div>
 
             {isBalanceInsufficient && (
