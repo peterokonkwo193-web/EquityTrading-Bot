@@ -51,9 +51,11 @@ export default function AdminDashboardPage() {
   const profitStatus = useStatus();
   const [selectedProofUrl, setSelectedProofUrl] = useState<string | null>(null);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    status.clear();
+  const loadData = async (silent = false) => {
+    if (!silent) {
+      setIsLoading(true);
+      status.clear();
+    }
     try {
       if (activeSubTab === "users") {
         const data = await fetchAdminUsers(searchQuery);
@@ -66,9 +68,9 @@ export default function AdminDashboardPage() {
         setAuditLogs(data);
       }
     } catch (err: any) {
-      status.error(err?.message || "Failed to load admin dashboard data.");
+      if (!silent) status.error(err?.message || "Failed to load admin dashboard data.");
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -121,6 +123,11 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     if (currentAdmin?.role !== "ADMIN") return;
     loadData();
+
+    // Poll in the background so newly submitted deposits/withdrawals show up
+    // here as soon as possible without the admin needing to refresh.
+    const interval = setInterval(() => loadData(true), 5000);
+    return () => clearInterval(interval);
   }, [currentAdmin, activeSubTab]);
 
   const handleSearch = (e: React.FormEvent) => {
