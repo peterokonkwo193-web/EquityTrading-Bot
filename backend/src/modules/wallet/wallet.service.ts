@@ -105,10 +105,6 @@ export async function createDepositRequest(
   const fiatAmountValue = convertUsdToFiat(totalUsd, account.currency);
   const fiatAmount = new Prisma.Decimal(fiatAmountValue);
 
-  if (fiatAmountValue < 100) {
-    throw new AppError(`Minimum deposit is ${100} ${account.currency}`, 400);
-  }
-
   const tx = await prisma.walletTransaction.create({
     data: {
       accountId,
