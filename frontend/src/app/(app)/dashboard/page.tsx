@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Wallet, TrendingUp, Activity, Target, CheckCircle2, XCircle, ShieldCheck, Lock, BadgeCheck, ActivitySquare } from "lucide-react";
+import { Wallet, TrendingUp, Activity, Target, CheckCircle2, XCircle, ShieldCheck, Lock, BadgeCheck } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useAccount } from "@/context/AccountContext";
 import { useTradingStats } from "@/hooks/useTradingStats";
@@ -177,7 +177,7 @@ export default function DashboardPage() {
         <h3 className="text-center text-sm font-bold tracking-widest text-text-secondary uppercase">
           Your Funds Are Protected
         </h3>
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mt-5 flex flex-col gap-4">
           {PROTECTION_BADGES.map((badge) => (
             <div
               key={badge.title}
@@ -200,5 +200,4 @@ const PROTECTION_BADGES = [
   { icon: ShieldCheck, title: "Bank-grade", subtitle: "256-bit SSL" },
   { icon: Lock, title: "Cold storage", subtitle: "98% offline" },
   { icon: BadgeCheck, title: "Audited", subtitle: "Q4 2025" },
-  { icon: ActivitySquare, title: "24/7 Monitoring", subtitle: "AI risk engine" },
 ];
