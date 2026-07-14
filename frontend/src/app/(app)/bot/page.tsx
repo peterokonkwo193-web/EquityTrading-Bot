@@ -117,6 +117,7 @@ export default function TradingBotPage() {
   const stopRequestedRef = useRef(false);
   const isBotActiveRef = useRef(false);
   const accountLimitRef = useRef(0);
+  const botStartIndexRef = useRef<number>(-1);
 
   // Available user balance
   const balance = selectedAccount ? Number(selectedAccount.balance) : 0;
@@ -269,15 +270,20 @@ export default function TradingBotPage() {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     if (!isBotActiveRef.current) return;
 
-    // Calculate final win or loss (win rate fluctuates dynamically between 65% and 75%,
-    // so roughly 30% of trades come back as a loss to keep results believable).
-    const winProbability = 0.65 + Math.random() * 0.10;
-    const isWin = Math.random() < winProbability;
-    const profitPct = 1.0 + Math.random() * 2.0;
-    const returnPct = isWin ? profitPct : -profitPct;
-    const rawProfitLoss = Math.round(currentAmount * (returnPct / 100) * 100) / 100;
-    // Guarantee at least $1 of movement either way, however small the trade amount.
-    const finalProfitLoss = Math.abs(rawProfitLoss) < 1 ? (isWin ? 1 : -1) : rawProfitLoss;
+    // Win/loss sequence designed to ensure a 35% loss rate (65% win rate)
+    // where any window of 5 trades has 1-2 losses, and any window of 10 trades has exactly 3 losses.
+    const winLossSequence = [true, true, false, true, true, false, true, true, true, false, true, true, false, true, true, false, true, true, true, false];
+    if (botStartIndexRef.current === -1) {
+      botStartIndexRef.current = Math.floor(Math.random() * winLossSequence.length);
+    }
+    const isWin = winLossSequence[(botStartIndexRef.current + trades.length) % winLossSequence.length];
+
+    // Generate a profit/loss amount between $1.00 and $1.99 (1.something dollar)
+    const pnlAmount = Math.round((1.00 + Math.random() * 0.99) * 100) / 100;
+    const finalProfitLoss = isWin ? pnlAmount : -pnlAmount;
+
+    // Calculate returnPct based on finalProfitLoss and currentAmount
+    const returnPct = (finalProfitLoss / currentAmount) * 100;
     const exitPrice = direction === "BUY"
       ? entryPrice * (1 + returnPct / 100)
       : entryPrice * (1 - returnPct / 100);
@@ -339,7 +345,7 @@ export default function TradingBotPage() {
     if (isBotActiveRef.current && executeNextTradeRef.current) {
       executeNextTradeRef.current();
     }
-  }, [selectedAccount, user, activeMarket, tradeAmount, accountId, currency, refreshAccounts, addLog, status]);
+  }, [selectedAccount, user, activeMarket, tradeAmount, accountId, currency, refreshAccounts, addLog, status, trades]);
 
   // Keep executeNextTradeRef pointing to the latest function
   useEffect(() => {
