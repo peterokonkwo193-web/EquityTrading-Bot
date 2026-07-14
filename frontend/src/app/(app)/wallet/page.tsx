@@ -118,10 +118,17 @@ export default function WalletPage() {
   };
 
   useEffect(() => {
-    if (accountId) {
-      setIsLoading(true);
-      loadWallet();
-    }
+    if (!accountId) return;
+    setIsLoading(true);
+    loadWallet();
+
+    // Poll so admin-approved deposits/withdrawals appear here without a manual refresh.
+    const interval = setInterval(() => {
+      fetchWallet(accountId)
+        .then(setWallet)
+        .catch(() => {});
+    }, 8000);
+    return () => clearInterval(interval);
   }, [accountId]);
 
   const handleCopyAddress = (addr: string) => {

@@ -43,6 +43,13 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     }
     setIsLoading(true);
     refreshAccounts().finally(() => setIsLoading(false));
+
+    // Poll in the background so balance changes an admin approves (deposits,
+    // withdrawals) show up on the user's dashboard without a manual refresh.
+    const interval = setInterval(() => {
+      refreshAccounts().catch(() => {});
+    }, 8000);
+    return () => clearInterval(interval);
   }, [user, refreshAccounts]);
 
   const selectAccount = useCallback((accountId: string) => {

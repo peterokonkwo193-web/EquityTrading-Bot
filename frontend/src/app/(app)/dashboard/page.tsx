@@ -26,13 +26,19 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!accountId) return;
     let cancelled = false;
-    fetchWallet(accountId)
-      .then((data) => {
-        if (!cancelled) setWallet(data);
-      })
-      .catch(() => {});
+    const load = () => {
+      fetchWallet(accountId)
+        .then((data) => {
+          if (!cancelled) setWallet(data);
+        })
+        .catch(() => {});
+    };
+    load();
+    // Poll so admin-approved deposits/withdrawals reflect here without a manual refresh.
+    const interval = setInterval(load, 8000);
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
   }, [accountId, stats?.tradesCount]);
 
