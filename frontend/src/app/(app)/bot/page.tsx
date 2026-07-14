@@ -108,7 +108,9 @@ export default function TradingBotPage() {
   const [, setActivityLogs] = useState<string[]>(["Algo Engine ready. Select a market class to begin."]);
 
   // Deposit-based trading limit: every $100 deposited unlocks $10,000 of limit.
-  const [accountLimit, setAccountLimit] = useState<number>(0);
+  // Starts as Infinity (not 0) so the "limit reached" warning can't flash
+  // true before the real limit has finished loading from the wallet.
+  const [accountLimit, setAccountLimit] = useState<number>(Infinity);
 
   const rotationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   // Ref to hold latest executeNextTrade without causing dep-loop
@@ -116,7 +118,7 @@ export default function TradingBotPage() {
   // Ref flags to avoid stale closures on stop
   const stopRequestedRef = useRef(false);
   const isBotActiveRef = useRef(false);
-  const accountLimitRef = useRef(0);
+  const accountLimitRef = useRef(Infinity);
   const botStartIndexRef = useRef<number>(-1);
 
   // Available user balance
