@@ -270,18 +270,18 @@ export default function TradingBotPage() {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     if (!isBotActiveRef.current) return;
 
-    // Win/loss sequence designed to ensure a 10% loss rate (90% win rate, which is within the 85% to 95% range)
-    // where any window of 10 trades has exactly 1 loss, and any window of 20 trades has exactly 2 losses.
-    const winLossSequence = [true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, false, true, true, true, true];
+    // Win/loss sequence designed to ensure a 30% loss rate (70% win rate)
+    // where any window of 5 trades has 1-2 losses, and any window of 10 trades has exactly 3 losses.
+    const winLossSequence = [true, true, false, true, true, true, false, true, true, false, true, true, true, false, true, true, false, true, true, false];
     if (botStartIndexRef.current === -1) {
       botStartIndexRef.current = Math.floor(Math.random() * winLossSequence.length);
     }
     const isWin = winLossSequence[(botStartIndexRef.current + trades.length) % winLossSequence.length];
 
-    // Generate a loss amount between $1.00 and $1.99 (1.something dollar)
-    // and make the profit be exactly 35% of the loss (0.something dollar)
-    const lossAmount = Math.round((1.00 + Math.random() * 0.99) * 100) / 100;
-    const profitAmount = Math.round((lossAmount * 0.35) * 100) / 100;
+    // Generate a loss amount between $1.00 and $1.49 (1.50 less than)
+    // and make the profit amount be between $1.50 and $1.99 (1.50 or upwards)
+    const lossAmount = Math.round((1.00 + Math.random() * 0.49) * 100) / 100;
+    const profitAmount = Math.round((1.50 + Math.random() * 0.49) * 100) / 100;
     const finalProfitLoss = isWin ? profitAmount : -lossAmount;
 
     // Calculate returnPct based on finalProfitLoss and currentAmount
