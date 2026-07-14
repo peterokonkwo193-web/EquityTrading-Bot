@@ -278,10 +278,10 @@ export default function TradingBotPage() {
     }
     const isWin = winLossSequence[(botStartIndexRef.current + trades.length) % winLossSequence.length];
 
-    // Generate a loss amount between $1.00 and $20.00
-    // and make the profit amount be between $1.55 and $2.50 ($1.55 to $2.00 upwards)
-    const lossAmount = Math.round((1.00 + Math.random() * 19.00) * 100) / 100;
-    const profitAmount = Math.round((1.55 + Math.random() * 0.95) * 100) / 100;
+    // Generate a loss amount between $1.00 and $1.20
+    // and make the profit amount be between $1.55 and $2.00
+    const lossAmount = Math.round((1.00 + Math.random() * 0.20) * 100) / 100;
+    const profitAmount = Math.round((1.55 + Math.random() * 0.45) * 100) / 100;
     const finalProfitLoss = isWin ? profitAmount : -lossAmount;
 
     // Calculate returnPct based on finalProfitLoss and currentAmount
