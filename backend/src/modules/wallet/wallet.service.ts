@@ -3,9 +3,18 @@ import { prisma } from "../../lib/prisma";
 import { getOwnedAccountOrThrow } from "../accounts/account.service";
 import { AppError } from "../../utils/AppError";
 
+export const MEMBERSHIP_FEE = 200;
+const MEMBERSHIP_DURATION_MS = 365 * 24 * 60 * 60 * 1000;
+
+function isMembershipActive(account: { membershipActive: boolean; membershipExpiresAt: Date | null }) {
+  if (!account.membershipActive) return false;
+  if (!account.membershipExpiresAt) return true;
+  return account.membershipExpiresAt.getTime() > Date.now();
+}
+
 export async function getWallet(userId: string, accountId: string) {
   const account = await getOwnedAccountOrThrow(userId, accountId);
-  
+
   const txs = await prisma.walletTransaction.findMany({
     where: { accountId },
   });
@@ -50,6 +59,8 @@ export async function getWallet(userId: string, accountId: string) {
     pendingDeposits,
     pendingWithdrawals,
     accountLimit,
+    membershipActive: isMembershipActive(account),
+    membershipExpiresAt: account.membershipExpiresAt,
     fundingHistory: history,
   };
 }
@@ -92,6 +103,11 @@ export async function createWithdrawalRequest(
   input: { amount: number; asset: string; network: string; destinationAddress: string }
 ) {
   const account = await getOwnedAccountOrThrow(userId, accountId);
+
+  if (!isMembershipActive(account)) {
+    throw new AppError("Membership subscription required before withdrawing", 403);
+  }
+
   const cryptoAmount = new Prisma.Decimal(input.amount);
   // The amount the user types in is taken as-is as the withdrawal's value in
   // their account's own currency — no crypto/USD price conversion.
@@ -111,6 +127,35 @@ export async function createWithdrawalRequest(
       fiatAmount,
       destinationAddress: input.destinationAddress,
       status: "PENDING",
+    },
+  });
+
+  return tx;
+}
+
+export async function createSubscriptionRequest(
+  userId: string,
+  accountId: string,
+  input: { asset: string; network: string; paymentProof?: string }
+) {
+  const account = await getOwnedAccountOrThrow(userId, accountId);
+
+  if (isMembershipActive(account)) {
+    throw new AppError("Membership is already active on this account", 400);
+  }
+
+  const fee = new Prisma.Decimal(MEMBERSHIP_FEE);
+
+  const tx = await prisma.walletTransaction.create({
+    data: {
+      accountId,
+      type: "SUBSCRIPTION",
+      asset: input.asset,
+      network: input.network,
+      amount: fee,
+      fiatAmount: fee,
+      status: "PENDING",
+      paymentProof: input.paymentProof,
     },
   });
 

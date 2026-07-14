@@ -3,17 +3,18 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { 
-  Users, 
-  Search, 
-  FileText, 
-  Coins, 
-  ArrowDownLeft, 
-  ArrowUpRight, 
-  Check, 
-  X, 
+import {
+  Users,
+  Search,
+  FileText,
+  Coins,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Check,
+  X,
   ExternalLink,
-  Lock
+  Lock,
+  ShieldCheck
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -36,7 +37,7 @@ export default function AdminDashboardPage() {
   const { user: currentAdmin } = useAuth();
   const status = useStatus();
 
-  const [activeSubTab, setActiveSubTab] = useState<"users" | "deposits" | "withdrawals" | "audit">("users");
+  const [activeSubTab, setActiveSubTab] = useState<"users" | "deposits" | "withdrawals" | "subscriptions" | "audit">("users");
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -60,7 +61,7 @@ export default function AdminDashboardPage() {
       if (activeSubTab === "users") {
         const data = await fetchAdminUsers(searchQuery);
         setUsers(data);
-      } else if (activeSubTab === "deposits" || activeSubTab === "withdrawals") {
+      } else if (activeSubTab === "deposits" || activeSubTab === "withdrawals" || activeSubTab === "subscriptions") {
         const data = await fetchAdminTransactions();
         setTransactions(data);
       } else if (activeSubTab === "audit") {
@@ -162,6 +163,7 @@ export default function AdminDashboardPage() {
 
   const pendingDeposits = transactions.filter((t) => t.type === "DEPOSIT" && t.status === "PENDING");
   const pendingWithdrawals = transactions.filter((t) => t.type === "WITHDRAWAL" && t.status === "PENDING");
+  const pendingSubscriptions = transactions.filter((t) => t.type === "SUBSCRIPTION" && t.status === "PENDING");
 
   return (
     <div className="flex flex-col gap-6">
@@ -208,6 +210,22 @@ export default function AdminDashboardPage() {
             {pendingWithdrawals.length > 0 && (
               <span className="ml-1 bg-purple-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0">
                 {pendingWithdrawals.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveSubTab("subscriptions")}
+            className={`pb-3 px-4 text-sm font-semibold transition-all border-b-2 flex items-center gap-2 ${
+              activeSubTab === "subscriptions"
+                ? "border-gold text-gold"
+                : "border-transparent text-text-secondary hover:text-text-primary"
+            }`}
+          >
+            <ShieldCheck className="h-4 w-4" />
+            Subscription Queue
+            {pendingSubscriptions.length > 0 && (
+              <span className="ml-1 bg-gold text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0">
+                {pendingSubscriptions.length}
               </span>
             )}
           </button>
@@ -515,6 +533,108 @@ export default function AdminDashboardPage() {
                             >
                               <Check className="h-3 w-3" />
                               Accept
+                            </button>
+                            <button
+                              onClick={() => handleReview(tx.id, "REJECTED")}
+                              className="inline-flex items-center gap-1 text-[10px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 px-2 py-1 rounded-lg transition-colors whitespace-nowrap"
+                            >
+                              <X className="h-3 w-3" />
+                              Reject
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </Card>
+        )}
+
+        {/* Tab Contents: Subscriptions Review Queue */}
+        {activeSubTab === "subscriptions" && (
+          <Card className="flex flex-col gap-4">
+            <h3 className="text-base font-bold text-text-primary border-b border-white/10 pb-4 mb-2 flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-gold" />
+              Pending Membership Subscriptions
+            </h3>
+
+            <div className="overflow-x-auto">
+              {isLoading ? (
+                <div className="flex flex-col gap-3 py-6">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <Skeleton key={i} className="h-20 w-full" />
+                  ))}
+                </div>
+              ) : pendingSubscriptions.length === 0 ? (
+                <p className="text-center py-16 text-sm text-text-secondary">No pending membership subscriptions require review.</p>
+              ) : (
+                <table className="w-full min-w-[820px] text-left text-xs border-collapse table-fixed">
+                  <colgroup>
+                    <col className="w-[22%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[12%]" />
+                    <col className="w-[13%]" />
+                    <col className="w-[25%]" />
+                  </colgroup>
+                  <thead>
+                    <tr className="border-b border-white/10 text-text-secondary text-[10px] uppercase tracking-wider">
+                      <th className="py-2 pr-2 font-semibold">User</th>
+                      <th className="py-2 pr-2 font-semibold">Fee</th>
+                      <th className="py-2 pr-2 font-semibold">Asset</th>
+                      <th className="py-2 pr-2 font-semibold">Network</th>
+                      <th className="py-2 pr-2 font-semibold">Proof</th>
+                      <th className="py-2 pr-2 font-semibold text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {pendingSubscriptions.map((tx) => (
+                      <tr key={tx.id} className="hover:bg-white/[0.01] transition-colors align-top">
+                        <td className="py-3 pr-2">
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-semibold text-text-primary text-xs truncate">
+                              {tx.account?.user?.name || "Unknown User"}
+                            </span>
+                            <span className="text-[10px] text-text-secondary truncate">
+                              {tx.account?.user?.email}
+                            </span>
+                            <span className="text-[9px] font-mono text-text-muted mt-0.5 truncate">
+                              {tx.account?.accountNumber}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 pr-2 font-bold text-gold text-xs">
+                          {formatCurrency(tx.fiatAmount, tx.account?.currency || "USD")}
+                        </td>
+                        <td className="py-3 pr-2 text-text-primary text-xs truncate">
+                          {tx.amount} {tx.asset}
+                        </td>
+                        <td className="py-3 pr-2 text-[10px] text-text-secondary truncate">
+                          {tx.network}
+                        </td>
+                        <td className="py-3 pr-2">
+                          {tx.paymentProof ? (
+                            <button
+                              onClick={() => setSelectedProofUrl(tx.paymentProof)}
+                              className="inline-flex items-center gap-1 text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 px-2 py-1 rounded-lg transition-colors whitespace-nowrap"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              View
+                            </button>
+                          ) : (
+                            <span className="text-[10px] text-text-muted">None</span>
+                          )}
+                        </td>
+                        <td className="py-3 text-right">
+                          <div className="inline-flex gap-1.5">
+                            <button
+                              onClick={() => handleReview(tx.id, "APPROVED")}
+                              className="inline-flex items-center gap-1 text-[10px] font-semibold bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 px-2 py-1 rounded-lg transition-colors whitespace-nowrap"
+                            >
+                              <Check className="h-3 w-3" />
+                              Activate
                             </button>
                             <button
                               onClick={() => handleReview(tx.id, "REJECTED")}

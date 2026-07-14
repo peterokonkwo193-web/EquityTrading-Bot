@@ -17,6 +17,7 @@ enum UserRole {
 enum WalletTxType {
   DEPOSIT
   WITHDRAWAL
+  SUBSCRIPTION
 }
 
 enum WalletTxStatus {
@@ -100,15 +101,17 @@ model User {
 }
 
 model Account {
-  id            String        @id @default(uuid())
-  userId        String
-  name          String
-  accountNumber String        @unique
-  balance       Decimal       @db.Decimal(18, 2) @default(0)
-  currency      String        @default("USD")
-  status        AccountStatus @default(ACTIVE)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                  String        @id @default(uuid())
+  userId              String
+  name                String
+  accountNumber       String        @unique
+  balance             Decimal       @default(0) @db.Decimal(18, 2)
+  currency            String        @default("USD")
+  status              AccountStatus @default(ACTIVE)
+  membershipActive    Boolean       @default(false)
+  membershipExpiresAt DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
   user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   tradingStats       TradingStats?
@@ -125,8 +128,8 @@ model Account {
 model TradingStats {
   id          String   @id @default(uuid())
   accountId   String   @unique
-  totalPnl    Decimal  @db.Decimal(18, 2) @default(0)
-  todayPnl    Decimal  @db.Decimal(18, 2) @default(0)
+  totalPnl    Decimal  @default(0) @db.Decimal(18, 2)
+  todayPnl    Decimal  @default(0) @db.Decimal(18, 2)
   tradesCount Int      @default(0)
   winCount    Int      @default(0)
   status      String   @default("active")
@@ -145,7 +148,7 @@ model SimulatedTrade {
   assetClass      AssetClass
   direction       TradeDirection
   amount          Decimal        @db.Decimal(18, 2)
-  profitLoss      Decimal        @db.Decimal(18, 2) @default(0)
+  profitLoss      Decimal        @default(0) @db.Decimal(18, 2)
   status          TradeStatus    @default(OPEN)
   durationSeconds Int            @default(20)
   openedAt        DateTime       @default(now())
@@ -153,10 +156,10 @@ model SimulatedTrade {
   closedAt        DateTime?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
-  
+
   exchangeOrderId String?
-  entryPrice      Decimal?       @db.Decimal(18, 8)
-  exitPrice       Decimal?       @db.Decimal(18, 8)
+  entryPrice      Decimal? @db.Decimal(18, 8)
+  exitPrice       Decimal? @db.Decimal(18, 8)
 
   account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
@@ -248,7 +251,7 @@ model AuditLog {
 model ExchangeConnection {
   id                 String   @id @default(uuid())
   accountId          String   @unique
-  exchange           String   // BINANCE, COINBASE
+  exchange           String // BINANCE, COINBASE
   apiKey             String
   apiSecretEncrypted String
   createdAt          DateTime @default(now())
@@ -258,4 +261,3 @@ model ExchangeConnection {
 
   @@map("exchange_connections")
 }
-

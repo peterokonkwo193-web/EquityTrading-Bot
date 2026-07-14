@@ -97,6 +97,15 @@ export const requestWithdrawal = (
     body: input,
   });
 
+export const requestSubscription = (
+  accountId: string,
+  input: { asset: string; network: string; paymentProof?: string }
+) =>
+  apiRequest<WalletTransaction>(`/accounts/${accountId}/wallet/subscription`, {
+    method: "POST",
+    body: input,
+  });
+
 // Exchange Connection
 export const connectExchange = (
   accountId: string,

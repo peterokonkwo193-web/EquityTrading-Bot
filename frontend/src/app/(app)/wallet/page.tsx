@@ -13,7 +13,11 @@ import {
   Coins,
   Copy,
   Check,
-  Upload
+  Upload,
+  Lock,
+  Gift,
+  ShieldCheck,
+  Info
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -24,9 +28,11 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { StatusBanner } from "@/components/status/StatusBanner";
 import { useStatus } from "@/hooks/useStatus";
 import { useAccount } from "@/context/AccountContext";
-import { fetchWallet, requestDeposit, requestWithdrawal } from "@/lib/endpoints";
+import { fetchWallet, requestDeposit, requestWithdrawal, requestSubscription } from "@/lib/endpoints";
 import { formatCurrency } from "@/lib/currency";
 import { Wallet, WalletTransaction } from "@/types";
+
+const MEMBERSHIP_FEE = 200;
 
 const SUPPORTED_ASSETS = ["BTC", "USDT", "ETH", "TRON", "BNB", "USDC"] as const;
 
@@ -54,6 +60,8 @@ export default function WalletPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+  const [isMembershipGateOpen, setIsMembershipGateOpen] = useState(false);
+  const [depositMode, setDepositMode] = useState<"deposit" | "subscription">("deposit");
 
   // Form State - Deposit
   const [depAmount, setDepAmount] = useState("");
@@ -142,14 +150,35 @@ export default function WalletPage() {
     if (!accountId) return;
     status.clear();
 
-    const amt = parseFloat(depAmount);
-    if (isNaN(amt) || amt <= 0) {
-      status.error("Please enter a valid amount greater than 0");
+    if (!paymentProof) {
+      status.error("Please attach a screenshot of your payment proof");
       return;
     }
 
-    if (!paymentProof) {
-      status.error("Please attach a screenshot of your payment proof");
+    if (depositMode === "subscription") {
+      setIsSubmitting(true);
+      try {
+        await requestSubscription(accountId, {
+          asset: depAsset,
+          network: depNetwork,
+          paymentProof,
+        });
+        setPaymentProof("");
+        setProofFileName("");
+        await loadWallet();
+        setIsDepositOpen(false);
+        status.success("Membership payment submitted. Awaiting admin review.");
+      } catch (err) {
+        status.error((err as any)?.message || "Failed to submit membership payment.");
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    const amt = parseFloat(depAmount);
+    if (isNaN(amt) || amt <= 0) {
+      status.error("Please enter a valid amount greater than 0");
       return;
     }
 
@@ -171,6 +200,22 @@ export default function WalletPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleWithdrawClick = () => {
+    if (wallet && !wallet.membershipActive) {
+      setIsMembershipGateOpen(true);
+      return;
+    }
+    setIsWithdrawOpen(true);
+  };
+
+  const handleActivateMembership = () => {
+    setIsMembershipGateOpen(false);
+    setDepositMode("subscription");
+    setPaymentProof("");
+    setProofFileName("");
+    setIsDepositOpen(true);
   };
 
   const handleWithdrawalSubmit = async (e: React.FormEvent) => {
@@ -276,11 +321,18 @@ export default function WalletPage() {
 
       {/* Action Buttons */}
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Button variant="primary" className="w-full" onClick={() => setIsDepositOpen(true)}>
+        <Button
+          variant="primary"
+          className="w-full"
+          onClick={() => {
+            setDepositMode("deposit");
+            setIsDepositOpen(true);
+          }}
+        >
           <ArrowDownLeft className="h-4 w-4" />
           Deposit
         </Button>
-        <Button variant="secondary" className="w-full" onClick={() => setIsWithdrawOpen(true)}>
+        <Button variant="secondary" className="w-full" onClick={handleWithdrawClick}>
           <ArrowUpRight className="h-4 w-4" />
           Withdraw
         </Button>
@@ -326,6 +378,7 @@ export default function WalletPage() {
               <tbody>
                 {wallet.fundingHistory.map((tx: WalletTransaction) => {
                   const isDep = tx.type === "DEPOSIT";
+                  const isSub = tx.type === "SUBSCRIPTION";
                   const isPending = tx.status === "PENDING";
                   const isApproved = tx.status === "APPROVED";
                   const isRejected = tx.status === "REJECTED";
@@ -336,9 +389,9 @@ export default function WalletPage() {
                         {new Date(tx.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
                       </td>
                       <td className="py-3 pr-4">
-                        <span className={`inline-flex items-center gap-1 font-semibold ${isDep ? "text-green-400" : "text-rose-400"}`}>
-                          {isDep ? <ArrowDownLeft className="h-3.5 w-3.5" /> : <ArrowUpRight className="h-3.5 w-3.5" />}
-                          {isDep ? "Deposit" : "Withdrawal"}
+                        <span className={`inline-flex items-center gap-1 font-semibold ${isSub ? "text-gold" : isDep ? "text-green-400" : "text-rose-400"}`}>
+                          {isSub ? <ShieldCheck className="h-3.5 w-3.5" /> : isDep ? <ArrowDownLeft className="h-3.5 w-3.5" /> : <ArrowUpRight className="h-3.5 w-3.5" />}
+                          {isSub ? "Membership" : isDep ? "Deposit" : "Withdrawal"}
                         </span>
                       </td>
                       <td className="py-3 pr-4 text-text-primary">
@@ -381,7 +434,11 @@ export default function WalletPage() {
       </Card>
 
       {/* Deposit Modal */}
-      <Modal isOpen={isDepositOpen} onClose={() => setIsDepositOpen(false)} title="Deposit Assets">
+      <Modal
+        isOpen={isDepositOpen}
+        onClose={() => setIsDepositOpen(false)}
+        title={depositMode === "subscription" ? "Activate Membership" : "Deposit Assets"}
+      >
         <form onSubmit={handleDepositSubmit} className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
@@ -437,24 +494,31 @@ export default function WalletPage() {
               </button>
             </div>
             <span className="text-[10px] text-text-muted italic">
-              Send tokens to this address then submit your deposit request below.
+              Send tokens to this address then submit your {depositMode === "subscription" ? "membership payment" : "deposit request"} below.
             </span>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Input
-              label="Amount"
-              type="number"
-              step="0.00000001"
-              placeholder="0.00"
-              value={depAmount}
-              onChange={(e) => setDepAmount(e.target.value)}
-              required
-            />
-            <span className="text-[10px] text-text-muted">
-              Minimum deposit: {formatCurrency(100, selectedAccount.currency)}
-            </span>
-          </div>
+          {depositMode === "subscription" ? (
+            <div className="flex items-center justify-between rounded-xl border border-gold/20 bg-gold/[0.04] p-4">
+              <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Membership Fee</span>
+              <span className="text-lg font-bold text-gold">{formatCurrency(MEMBERSHIP_FEE, selectedAccount.currency)}</span>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              <Input
+                label="Amount"
+                type="number"
+                step="0.00000001"
+                placeholder="0.00"
+                value={depAmount}
+                onChange={(e) => setDepAmount(e.target.value)}
+                required
+              />
+              <span className="text-[10px] text-text-muted">
+                Minimum deposit: {formatCurrency(100, selectedAccount.currency)}
+              </span>
+            </div>
+          )}
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
@@ -486,9 +550,88 @@ export default function WalletPage() {
           <StatusBanner status={status.status} />
 
           <Button type="submit" variant="primary" className="w-full" isLoading={isSubmitting} disabled={isLoading}>
-            Verify & Submit Deposit
+            {depositMode === "subscription" ? "Verify & Submit Membership Payment" : "Verify & Submit Deposit"}
           </Button>
         </form>
+      </Modal>
+
+      {/* Membership Subscription Required */}
+      <Modal
+        isOpen={isMembershipGateOpen}
+        onClose={() => setIsMembershipGateOpen(false)}
+        title="Membership Subscription Required"
+      >
+        <div className="flex flex-col items-center text-center gap-2 mb-2">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gold/10 text-gold">
+            <Lock className="h-6 w-6" />
+          </div>
+          <p className="text-sm text-text-secondary">Your account is ready for withdrawals.</p>
+        </div>
+
+        <div className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-4 mt-2">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold/10 text-gold">
+            <Gift className="h-4 w-4" />
+          </div>
+          <p className="text-xs text-text-secondary leading-relaxed">
+            To activate your withdrawal privileges, complete the{" "}
+            <span className="text-gold font-semibold">one-time annual subscription payment</span> below. Once
+            activated, you&apos;ll enjoy uninterrupted withdrawals for the next{" "}
+            <span className="text-gold font-semibold">12 months</span>.
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-gold/30 bg-gold/[0.04] p-4 mt-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold/10 text-gold">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-text-primary">Annual Membership</p>
+              <p className="text-[11px] text-green-400 flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" />
+                Valid for 12 months
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-bold text-gold">{formatCurrency(MEMBERSHIP_FEE, selectedAccount.currency)}</p>
+            <p className="text-[10px] text-text-muted">One-time payment</p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 mt-4 flex flex-col gap-2.5">
+          <p className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+            <Info className="h-3.5 w-3.5 text-gold" />
+            Important
+          </p>
+          {[
+            "This is a one-time annual fee.",
+            "It is only required before your first withdrawal.",
+            "After subscription, you can make unlimited withdrawals during your active membership without paying this fee again.",
+            "Your membership remains valid for 12 months from the date of activation.",
+          ].map((line) => (
+            <div key={line} className="flex items-start gap-2 border-t border-white/5 pt-2.5 first:border-t-0 first:pt-0">
+              <CheckCircle2 className="h-3.5 w-3.5 text-gold shrink-0 mt-0.5" />
+              <span className="text-xs text-text-secondary">{line}</span>
+            </div>
+          ))}
+        </div>
+
+        <Button variant="gold" className="w-full mt-4" onClick={handleActivateMembership}>
+          <Lock className="h-4 w-4" />
+          Activate Membership
+        </Button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setIsMembershipGateOpen(false);
+            setIsWithdrawOpen(true);
+          }}
+          className="w-full text-center text-xs text-text-secondary hover:text-text-primary mt-3 transition-colors"
+        >
+          Back to Withdrawal
+        </button>
       </Modal>
 
       {/* Withdraw Modal */}

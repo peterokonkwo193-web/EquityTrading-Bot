@@ -61,7 +61,7 @@ export interface TradingStats {
 export interface WalletTransaction {
   id: string;
   accountId: string;
-  type: "DEPOSIT" | "WITHDRAWAL";
+  type: "DEPOSIT" | "WITHDRAWAL" | "SUBSCRIPTION";
   asset: string;
   network: string;
   amount: string;
@@ -100,6 +100,8 @@ export interface Wallet {
   pendingDeposits: string;
   pendingWithdrawals: string;
   accountLimit: string | null;
+  membershipActive: boolean;
+  membershipExpiresAt: string | null;
   fundingHistory: WalletTransaction[];
 }
 
