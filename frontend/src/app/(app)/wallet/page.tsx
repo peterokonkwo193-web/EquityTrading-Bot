@@ -216,8 +216,8 @@ export default function WalletPage() {
     status.clear();
 
     const amt = parseFloat(withAmount);
-    if (isNaN(amt) || amt <= 0) {
-      status.error("Please enter a valid amount greater than 0");
+    if (isNaN(amt) || amt < 200) {
+      status.error(`Minimum withdrawal is ${formatCurrency(200, selectedAccount?.currency ?? "USD")}`);
       return;
     }
     if (destAddress.trim().length < 8) {
@@ -678,15 +678,20 @@ export default function WalletPage() {
             required
           />
 
-          <Input
-            label="Amount"
-            type="number"
-            step="0.00000001"
-            placeholder="0.00"
-            value={withAmount}
-            onChange={(e) => setWithAmount(e.target.value)}
-            required
-          />
+          <div className="flex flex-col gap-1.5">
+            <Input
+              label="Amount"
+              type="number"
+              step="0.00000001"
+              placeholder="0.00"
+              value={withAmount}
+              onChange={(e) => setWithAmount(e.target.value)}
+              required
+            />
+            <span className="text-[10px] text-text-muted">
+              Minimum withdrawal: {formatCurrency(200, selectedAccount.currency)}
+            </span>
+          </div>
 
           <StatusBanner status={status.status} />
 

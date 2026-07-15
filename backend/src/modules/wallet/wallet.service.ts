@@ -108,6 +108,10 @@ export async function createWithdrawalRequest(
     throw new AppError("Membership subscription required before withdrawing", 403);
   }
 
+  if (input.amount < 200) {
+    throw new AppError(`Minimum withdrawal is 200 ${account.currency}`, 400);
+  }
+
   const cryptoAmount = new Prisma.Decimal(input.amount);
   // The amount the user types in is taken as-is as the withdrawal's value in
   // their account's own currency — no crypto/USD price conversion.

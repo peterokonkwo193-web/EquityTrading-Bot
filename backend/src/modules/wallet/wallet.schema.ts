@@ -17,10 +17,7 @@ export const depositRequestSchema = z.object({
 export type DepositRequestInput = z.infer<typeof depositRequestSchema>;
 
 export const withdrawalRequestSchema = z.object({
-  amount: z.coerce
-    .number()
-    .positive("Amount must be greater than 0")
-    .min(100, "Minimum withdrawal amount is 100"),
+  amount: z.coerce.number().positive("Amount must be greater than 0"),
   asset: z.string().min(1, "Asset is required"),
   network: z.string().min(1, "Network is required"),
   destinationAddress: z.string().min(8, "Destination address must be at least 8 characters long"),
