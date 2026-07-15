@@ -557,49 +557,64 @@ export default function WalletPage() {
       <Modal
         isOpen={isMembershipGateOpen}
         onClose={() => setIsMembershipGateOpen(false)}
-        title="Membership Required"
+        title={
+          <span>
+            Membership Subscription <span className="text-gold">Required</span>
+          </span>
+        }
       >
-        <div className="flex flex-col items-center text-center gap-1 mb-1.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/10 text-gold">
-            <Lock className="h-4 w-4" />
+        <div className="flex flex-col items-center text-center gap-1.5 mb-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gold/10 text-gold">
+            <Lock className="h-5 w-5" />
           </div>
           <p className="text-xs text-text-secondary">Your account is ready for withdrawals.</p>
         </div>
 
-        <div className="flex items-start gap-2 rounded-lg border border-white/5 bg-white/[0.02] p-2.5">
-          <Gift className="h-3.5 w-3.5 text-gold shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2.5 rounded-lg border border-white/5 bg-white/[0.02] p-3">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gold/10 text-gold">
+            <Gift className="h-3.5 w-3.5" />
+          </div>
           <p className="text-[11px] text-text-secondary leading-snug">
-            Complete the <span className="text-gold font-semibold">one-time annual fee</span> below to unlock
-            withdrawals for the next <span className="text-gold font-semibold">12 months</span>.
+            To activate your withdrawal privileges, complete the{" "}
+            <span className="text-gold font-semibold">one-time annual subscription payment</span> below. Once
+            activated, you&apos;ll enjoy uninterrupted withdrawals for the next{" "}
+            <span className="text-gold font-semibold">12 months</span>.
           </p>
         </div>
 
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-gold/30 bg-gold/[0.04] p-2.5 mt-2">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-gold shrink-0" />
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-gold/30 bg-gold/[0.04] p-3 mt-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gold/10 text-gold">
+              <ShieldCheck className="h-4 w-4" />
+            </div>
             <div>
               <p className="text-xs font-bold text-text-primary">Annual Membership</p>
-              <p className="text-[10px] text-green-400">Valid for 12 months</p>
+              <p className="text-[10px] text-green-400 flex items-center gap-1">
+                <CheckCircle2 className="h-2.5 w-2.5" />
+                Valid for 12 months
+              </p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-lg font-bold text-gold leading-none">{formatCurrency(MEMBERSHIP_FEE, selectedAccount.currency)}</p>
-            <p className="text-[9px] text-text-muted">One-time</p>
+            <p className="text-xl font-bold text-gold leading-none">{formatCurrency(MEMBERSHIP_FEE, selectedAccount.currency)}</p>
+            <p className="text-[9px] text-text-muted mt-0.5">One-time payment</p>
           </div>
         </div>
 
-        <div className="rounded-lg border border-white/5 bg-white/[0.02] p-2.5 mt-2 flex flex-col gap-1">
-          <p className="text-[10px] font-bold text-text-primary flex items-center gap-1 mb-0.5">
-            <Info className="h-3 w-3 text-gold" />
+        <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3 mt-2.5 flex flex-col gap-2">
+          <p className="text-[11px] font-bold text-text-primary flex items-center gap-1.5">
+            <Info className="h-3.5 w-3.5 text-gold" />
             Important
           </p>
           {[
-            "One-time fee, required before your first withdrawal.",
-            "Unlimited withdrawals for 12 months after activation.",
+            "This is a one-time annual fee.",
+            "It is only required before your first withdrawal.",
+            "After subscription, you can make unlimited withdrawals during your active membership without paying this fee again.",
+            "Your membership remains valid for 12 months from the date of activation.",
           ].map((line) => (
-            <div key={line} className="flex items-start gap-1.5">
+            <div key={line} className="flex items-start gap-1.5 border-t border-white/5 pt-2 first:border-t-0 first:pt-0">
               <CheckCircle2 className="h-3 w-3 text-gold shrink-0 mt-0.5" />
-              <span className="text-[10px] text-text-secondary leading-snug">{line}</span>
+              <span className="text-[11px] text-text-secondary leading-snug">{line}</span>
             </div>
           ))}
         </div>
@@ -615,7 +630,7 @@ export default function WalletPage() {
             setIsMembershipGateOpen(false);
             setIsWithdrawOpen(true);
           }}
-          className="w-full text-center text-xs text-text-secondary hover:text-text-primary mt-2 transition-colors"
+          className="w-full text-center text-xs text-text-secondary hover:text-text-primary mt-2.5 transition-colors"
         >
           Back to Withdrawal
         </button>
