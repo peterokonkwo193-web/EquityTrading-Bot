@@ -8,6 +8,8 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(16, "JWT_SECRET must be at least 16 characters"),
   JWT_EXPIRES_IN: z.string().default("7d"),
   PORT: z.coerce.number().default(4000),
+  // Comma-separated list of allowed CORS origins, e.g.
+  // "http://localhost:3000,https://equitytradingbot.com,https://www.equitytradingbot.com"
   FRONTEND_URL: z.string().default("http://localhost:3000"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   ENCRYPTION_KEY: z.string().min(32, "ENCRYPTION_KEY must be exactly 32 characters").default("dev-only-encryption-key-change-me"),

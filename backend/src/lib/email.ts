@@ -4,7 +4,7 @@ import { logger } from "./logger";
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 
-const FROM_ADDRESS = "Equity Trading Bot <onboarding@resend.dev>";
+const FROM_ADDRESS = "Equity Trading Bot <no-reply@equitytradingbot.com>";
 
 /** Returns true if the email was actually delivered, false if it fell back to simulation. */
 export async function sendVerificationEmail(to: string, code: string): Promise<boolean> {
