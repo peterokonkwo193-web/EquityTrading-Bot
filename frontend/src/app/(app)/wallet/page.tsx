@@ -369,6 +369,7 @@ export default function WalletPage() {
                   <th className="py-2 pr-4 font-medium">Type</th>
                   <th className="py-2 pr-4 font-medium">Asset</th>
                   <th className="py-2 pr-4 font-medium">Network</th>
+                  <th className="py-2 pr-4 font-medium">Amount</th>
                   <th className="py-2 pr-4 font-medium">Status</th>
                 </tr>
               </thead>
@@ -394,10 +395,13 @@ export default function WalletPage() {
                       <td className="py-3 pr-4 text-text-primary">
                         <span className="flex items-center gap-1.5 font-mono">
                           <CryptoIcon symbol={tx.asset} className="h-4 w-4" />
-                          {parseFloat(tx.amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} {tx.asset}
+                          {tx.asset}
                         </span>
                       </td>
                       <td className="py-3 pr-4 text-text-secondary">{tx.network}</td>
+                      <td className="py-3 pr-4 text-text-primary font-mono">
+                        {formatCurrency(tx.fiatAmount, wallet.currency)}
+                      </td>
                       <td className="py-3 pr-4">
                         {isPending && (
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1 rounded-lg">

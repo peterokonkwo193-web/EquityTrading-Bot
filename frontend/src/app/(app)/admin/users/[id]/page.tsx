@@ -3,18 +3,19 @@
 
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
-import { 
-  ArrowLeft, 
-  User, 
-  Wallet, 
-  History, 
-  TrendingUp, 
-  Coins, 
+import {
+  ArrowLeft,
+  User,
+  Wallet,
+  History,
+  TrendingUp,
+  Coins,
   CheckCircle,
   XCircle,
   Clock,
   Briefcase,
-  ExternalLink
+  ExternalLink,
+  Check
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -23,7 +24,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { StatusBanner } from "@/components/status/StatusBanner";
 import { useStatus } from "@/hooks/useStatus";
 import { useAuth } from "@/context/AuthContext";
-import { fetchAdminUserDetail, adjustUserBalance } from "@/lib/endpoints";
+import { fetchAdminUserDetail, adjustUserBalance, reviewAdminTransaction } from "@/lib/endpoints";
 import { formatCurrency } from "@/lib/currency";
 
 export default function AdminUserDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -41,6 +42,8 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
   const [adjustNote, setAdjustNote] = useState("");
   const [isAdjusting, setIsAdjusting] = useState(false);
   const adjustStatus = useStatus();
+  const reviewStatus = useStatus();
+  const [reviewingTxId, setReviewingTxId] = useState<string | null>(null);
 
   const loadUserDetail = async () => {
     setIsLoading(true);
@@ -80,6 +83,21 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
       adjustStatus.error(err?.message || "Failed to adjust balance.");
     } finally {
       setIsAdjusting(false);
+    }
+  };
+
+  const handleReviewTx = async (txId: string, status: "APPROVED" | "REJECTED") => {
+    reviewStatus.clear();
+    setReviewingTxId(txId);
+    try {
+      await reviewAdminTransaction(txId, status);
+      reviewStatus.success(`Request ${status === "APPROVED" ? "approved" : "rejected"} successfully.`);
+      const data = await fetchAdminUserDetail(userId);
+      setUserData(data);
+    } catch (err: any) {
+      reviewStatus.error(err?.message || "Failed to review request.");
+    } finally {
+      setReviewingTxId(null);
     }
   };
 
@@ -334,7 +352,13 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
               <Wallet className="h-5 w-5 text-gold" />
               Crypto Wallet Deposit & Withdrawal History
             </h3>
-            
+
+            {reviewStatus.status && (
+              <div className="mb-3">
+                <StatusBanner status={reviewStatus.status} />
+              </div>
+            )}
+
             <div className="overflow-x-auto">
               {walletTransactions.length === 0 ? (
                 <p className="text-center py-12 text-sm text-text-secondary">No wallet transactions recorded for this user.</p>
@@ -347,7 +371,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                       <th className="py-2.5 font-semibold">Asset Details</th>
                       <th className="py-2.5 font-semibold">Fiat Value</th>
                       <th className="py-2.5 font-semibold">Address Details</th>
-                      <th className="py-2.5 font-semibold">Status</th>
+                      <th className="py-2.5 font-semibold text-right">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -358,7 +382,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                         </td>
                         <td className="py-3">
                           <span className={`inline-flex px-2 py-0.5 rounded text-xs font-semibold ${
-                            tx.type === "DEPOSIT" ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
+                            tx.type === "DEPOSIT" ? "bg-green-500/10 text-green-400" : tx.type === "SUBSCRIPTION" ? "bg-gold/10 text-gold" : "bg-red-500/10 text-red-400"
                           }`}>
                             {tx.type}
                           </span>
@@ -380,12 +404,26 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                           )}
                         </td>
 
-                        <td className="py-3">
+                        <td className="py-3 text-right">
                           {tx.status === "PENDING" && (
-                            <span className="inline-flex items-center gap-1 text-xs text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">
-                              <Clock className="h-3 w-3" />
-                              Pending
-                            </span>
+                            <div className="inline-flex gap-1.5">
+                              <button
+                                onClick={() => handleReviewTx(tx.id, "APPROVED")}
+                                disabled={reviewingTxId === tx.id}
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 px-2 py-1 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
+                              >
+                                <Check className="h-3 w-3" />
+                                Accept
+                              </button>
+                              <button
+                                onClick={() => handleReviewTx(tx.id, "REJECTED")}
+                                disabled={reviewingTxId === tx.id}
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 px-2 py-1 rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
+                              >
+                                <XCircle className="h-3 w-3" />
+                                Reject
+                              </button>
+                            </div>
                           )}
                           {tx.status === "APPROVED" && (
                             <span className="inline-flex items-center gap-1 text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded">

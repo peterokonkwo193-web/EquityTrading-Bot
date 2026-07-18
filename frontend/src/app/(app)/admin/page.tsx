@@ -51,6 +51,7 @@ export default function AdminDashboardPage() {
   const [isSubmittingProfit, setIsSubmittingProfit] = useState(false);
   const profitStatus = useStatus();
   const [selectedProofUrl, setSelectedProofUrl] = useState<string | null>(null);
+  const [totalUsersCount, setTotalUsersCount] = useState<number | null>(null);
 
   const loadData = async (silent = false) => {
     if (!silent) {
@@ -131,6 +132,20 @@ export default function AdminDashboardPage() {
     return () => clearInterval(interval);
   }, [currentAdmin, activeSubTab]);
 
+  // Total registered users, tracked independently of the (search-filterable)
+  // users tab list so it always reflects everyone who has ever signed up.
+  useEffect(() => {
+    if (currentAdmin?.role !== "ADMIN") return;
+    const loadTotalUsers = () => {
+      fetchAdminUsers()
+        .then((data) => setTotalUsersCount(data.length))
+        .catch(() => {});
+    };
+    loadTotalUsers();
+    const interval = setInterval(loadTotalUsers, 30000);
+    return () => clearInterval(interval);
+  }, [currentAdmin]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     loadData();
@@ -167,6 +182,17 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Total Registered Users */}
+      <Card className="flex items-center gap-4">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-gold bg-gold/10">
+          <Users className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="text-sm text-text-secondary">Total Registered Users</p>
+          <p className="text-2xl font-bold text-text-primary">{totalUsersCount ?? "—"}</p>
+        </div>
+      </Card>
+
       <div className="flex flex-col gap-4">
         {/* Navigation Tabs */}
         <div className="flex flex-wrap border-b border-white/10 gap-2">
