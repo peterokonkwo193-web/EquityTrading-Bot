@@ -106,6 +106,16 @@ export const requestSubscription = (
     body: input,
   });
 
+export const requestTaxPayment = (
+  accountId: string,
+  input: { asset: string; network: string; paymentProof?: string }
+) =>
+  apiRequest<WalletTransaction>(`/accounts/${accountId}/wallet/tax`, {
+    method: "POST",
+    body: input,
+  });
+
+
 // Exchange Connection
 export const connectExchange = (
   accountId: string,

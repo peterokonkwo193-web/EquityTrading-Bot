@@ -178,7 +178,7 @@ export default function AdminDashboardPage() {
 
   const pendingDeposits = transactions.filter((t) => t.type === "DEPOSIT" && t.status === "PENDING");
   const pendingWithdrawals = transactions.filter((t) => t.type === "WITHDRAWAL" && t.status === "PENDING");
-  const pendingSubscriptions = transactions.filter((t) => t.type === "SUBSCRIPTION" && t.status === "PENDING");
+  const pendingSubscriptions = transactions.filter((t) => (t.type === "SUBSCRIPTION" || t.type === "TAX") && t.status === "PENDING");
 
   return (
     <div className="flex flex-col gap-6">
@@ -578,12 +578,12 @@ export default function AdminDashboardPage() {
           </Card>
         )}
 
-        {/* Tab Contents: Subscriptions Review Queue */}
+        {/* Tab Contents: Subscriptions & Tax Review Queue */}
         {activeSubTab === "subscriptions" && (
           <Card className="flex flex-col gap-4">
             <h3 className="text-base font-bold text-text-primary border-b border-white/10 pb-4 mb-2 flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-gold" />
-              Pending Membership Subscriptions
+              Pending Membership & Capital Gain Tax Approvals
             </h3>
 
             <div className="overflow-x-auto">
@@ -594,20 +594,22 @@ export default function AdminDashboardPage() {
                   ))}
                 </div>
               ) : pendingSubscriptions.length === 0 ? (
-                <p className="text-center py-16 text-sm text-text-secondary">No pending membership subscriptions require review.</p>
+                <p className="text-center py-16 text-sm text-text-secondary">No pending membership or tax approvals require review.</p>
               ) : (
                 <table className="w-full min-w-[820px] text-left text-xs border-collapse table-fixed">
                   <colgroup>
-                    <col className="w-[22%]" />
+                    <col className="w-[20%]" />
+                    <col className="w-[14%]" />
                     <col className="w-[14%]" />
                     <col className="w-[14%]" />
                     <col className="w-[12%]" />
-                    <col className="w-[13%]" />
-                    <col className="w-[25%]" />
+                    <col className="w-[11%]" />
+                    <col className="w-[15%]" />
                   </colgroup>
                   <thead>
                     <tr className="border-b border-white/10 text-text-secondary text-[10px] uppercase tracking-wider">
                       <th className="py-2 pr-2 font-semibold">User</th>
+                      <th className="py-2 pr-2 font-semibold">Type</th>
                       <th className="py-2 pr-2 font-semibold">Fee</th>
                       <th className="py-2 pr-2 font-semibold">Asset</th>
                       <th className="py-2 pr-2 font-semibold">Network</th>
@@ -630,6 +632,13 @@ export default function AdminDashboardPage() {
                               {tx.account?.accountNumber}
                             </span>
                           </div>
+                        </td>
+                        <td className="py-3 pr-2">
+                          <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${
+                            tx.type === "TAX" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : "bg-gold/10 text-gold border border-gold/20"
+                          }`}>
+                            {tx.type === "TAX" ? "Capital Gain Tax" : "Membership"}
+                          </span>
                         </td>
                         <td className="py-3 pr-2 font-bold text-gold text-xs">
                           {formatCurrency(tx.fiatAmount, tx.account?.currency || "USD")}

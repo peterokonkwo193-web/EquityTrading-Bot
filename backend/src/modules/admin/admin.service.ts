@@ -160,6 +160,14 @@ export async function reviewTransaction(
             membershipExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
           },
         });
+      } else if (tx.type === "TAX") {
+        await db.account.update({
+          where: { id: tx.accountId },
+          data: {
+            taxActive: true,
+            taxExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          },
+        });
       }
     }
 
@@ -169,7 +177,13 @@ export async function reviewTransaction(
     });
 
     const actionLabel =
-      tx.type === "DEPOSIT" ? "DEPOSIT_REVIEW" : tx.type === "WITHDRAWAL" ? "WITHDRAWAL_REVIEW" : "SUBSCRIPTION_REVIEW";
+      tx.type === "DEPOSIT"
+        ? "DEPOSIT_REVIEW"
+        : tx.type === "WITHDRAWAL"
+        ? "WITHDRAWAL_REVIEW"
+        : tx.type === "SUBSCRIPTION"
+        ? "SUBSCRIPTION_REVIEW"
+        : "TAX_REVIEW";
     const amountNote =
       amountOverride !== undefined ? ` (admin-adjusted from ${tx.fiatAmount})` : "";
     const details = `${status} ${tx.type.toLowerCase()} request of ${tx.amount} ${tx.asset} (${effectiveAmount} ${tx.account.currency}${amountNote}) for account ${tx.account.accountNumber}`;

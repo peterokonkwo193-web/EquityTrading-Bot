@@ -61,12 +61,13 @@ export interface TradingStats {
 export interface WalletTransaction {
   id: string;
   accountId: string;
-  type: "DEPOSIT" | "WITHDRAWAL" | "SUBSCRIPTION";
+  type: "DEPOSIT" | "WITHDRAWAL" | "SUBSCRIPTION" | "TAX";
   asset: string;
   network: string;
   amount: string;
   fiatAmount: string;
   destinationAddress: string | null;
+  paymentProof?: string | null;
   txHash: string | null;
   status: "PENDING" | "APPROVED" | "REJECTED";
   createdAt: string;
@@ -102,6 +103,8 @@ export interface Wallet {
   accountLimit: string | null;
   membershipActive: boolean;
   membershipExpiresAt: string | null;
+  taxActive: boolean;
+  taxExpiresAt: string | null;
   fundingHistory: WalletTransaction[];
 }
 

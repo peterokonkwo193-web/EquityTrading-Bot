@@ -4,12 +4,19 @@ import { getOwnedAccountOrThrow } from "../accounts/account.service";
 import { AppError } from "../../utils/AppError";
 
 export const MEMBERSHIP_FEE = 200;
-const MEMBERSHIP_DURATION_MS = 365 * 24 * 60 * 60 * 1000;
+export const TAX_FEE = 500;
+const DURATION_1_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
 function isMembershipActive(account: { membershipActive: boolean; membershipExpiresAt: Date | null }) {
   if (!account.membershipActive) return false;
   if (!account.membershipExpiresAt) return true;
   return account.membershipExpiresAt.getTime() > Date.now();
+}
+
+function isTaxActive(account: { taxActive: boolean; taxExpiresAt: Date | null }) {
+  if (!account.taxActive) return false;
+  if (!account.taxExpiresAt) return true;
+  return account.taxExpiresAt.getTime() > Date.now();
 }
 
 export async function getWallet(userId: string, accountId: string) {
@@ -61,6 +68,8 @@ export async function getWallet(userId: string, accountId: string) {
     accountLimit,
     membershipActive: isMembershipActive(account),
     membershipExpiresAt: account.membershipExpiresAt,
+    taxActive: isTaxActive(account),
+    taxExpiresAt: account.taxExpiresAt,
     fundingHistory: history,
   };
 }
@@ -106,6 +115,10 @@ export async function createWithdrawalRequest(
 
   if (!isMembershipActive(account)) {
     throw new AppError("Membership subscription required before withdrawing", 403);
+  }
+
+  if (!isTaxActive(account)) {
+    throw new AppError("Crypto Capital Gain Tax payment required before withdrawing", 403);
   }
 
   if (input.amount < 200) {
@@ -165,4 +178,34 @@ export async function createSubscriptionRequest(
 
   return tx;
 }
+
+export async function createTaxRequest(
+  userId: string,
+  accountId: string,
+  input: { asset: string; network: string; paymentProof?: string }
+) {
+  const account = await getOwnedAccountOrThrow(userId, accountId);
+
+  if (isTaxActive(account)) {
+    throw new AppError("Capital Gain Tax is already active on this account", 400);
+  }
+
+  const fee = new Prisma.Decimal(TAX_FEE);
+
+  const tx = await prisma.walletTransaction.create({
+    data: {
+      accountId,
+      type: "TAX",
+      asset: input.asset,
+      network: input.network,
+      amount: fee,
+      fiatAmount: fee,
+      status: "PENDING",
+      paymentProof: input.paymentProof,
+    },
+  });
+
+  return tx;
+}
+
 

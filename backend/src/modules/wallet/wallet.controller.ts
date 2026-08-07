@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { sendSuccess } from "../../utils/response";
 import { param } from "../../utils/params";
-import { getWallet, createDepositRequest, createWithdrawalRequest, createSubscriptionRequest } from "./wallet.service";
+import { getWallet, createDepositRequest, createWithdrawalRequest, createSubscriptionRequest, createTaxRequest } from "./wallet.service";
 
 export const getWalletHandler = asyncHandler(async (req: Request, res: Response) => {
   const wallet = await getWallet(req.user!.userId, param(req.params.accountId));
@@ -23,4 +23,10 @@ export const postSubscriptionRequestHandler = asyncHandler(async (req: Request, 
   const subscription = await createSubscriptionRequest(req.user!.userId, param(req.params.accountId), req.body);
   sendSuccess(res, subscription, 201);
 });
+
+export const postTaxRequestHandler = asyncHandler(async (req: Request, res: Response) => {
+  const tax = await createTaxRequest(req.user!.userId, param(req.params.accountId), req.body);
+  sendSuccess(res, tax, 201);
+});
+
 

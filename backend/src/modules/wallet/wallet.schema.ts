@@ -33,4 +33,13 @@ export const subscriptionRequestSchema = z.object({
 
 export type SubscriptionRequestInput = z.infer<typeof subscriptionRequestSchema>;
 
+export const taxRequestSchema = z.object({
+  asset: z.string().min(1, "Asset is required"),
+  network: z.string().min(1, "Network is required"),
+  paymentProof: z.string().optional(),
+});
+
+export type TaxRequestInput = z.infer<typeof taxRequestSchema>;
+
+
 

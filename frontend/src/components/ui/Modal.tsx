@@ -7,7 +7,7 @@ import { X } from "lucide-react";
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title: React.ReactNode;
+  title?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -40,11 +40,11 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             onClick={(e) => e.stopPropagation()}
             className="glass w-full max-w-md rounded-2xl p-6 shadow-card"
           >
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-text-primary">{title}</h2>
+            <div className={`mb-3 flex items-center ${title ? "justify-between" : "justify-end"}`}>
+              {title && <h2 className="text-lg font-semibold text-text-primary">{title}</h2>}
               <button
                 onClick={onClose}
-                className="text-text-muted hover:text-text-primary"
+                className="text-text-muted hover:text-text-primary transition-colors"
                 aria-label="Close dialog"
               >
                 <X className="h-5 w-5" />
