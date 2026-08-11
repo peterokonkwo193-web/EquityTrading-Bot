@@ -38,13 +38,13 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.15 }}
             onClick={(e) => e.stopPropagation()}
-            className="glass w-full max-w-md rounded-2xl p-6 shadow-card"
+            className="glass w-full max-w-md md:max-w-lg max-h-[92vh] overflow-y-auto rounded-2xl p-5 sm:p-6 shadow-2xl bg-[#090A0D] border border-white/10"
           >
-            <div className={`mb-3 flex items-center ${title ? "justify-between" : "justify-end"}`}>
+            <div className={`flex items-center ${title ? "justify-between mb-3" : "justify-end mb-1"}`}>
               {title && <h2 className="text-lg font-semibold text-text-primary">{title}</h2>}
               <button
                 onClick={onClose}
-                className="text-text-muted hover:text-text-primary transition-colors"
+                className="text-text-muted hover:text-text-primary transition-colors p-1 rounded-lg hover:bg-white/10"
                 aria-label="Close dialog"
               >
                 <X className="h-5 w-5" />

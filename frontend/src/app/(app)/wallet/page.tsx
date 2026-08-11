@@ -733,84 +733,96 @@ export default function WalletPage() {
         onClose={() => setIsTaxNoticeOpen(false)}
       >
         <div className="flex flex-col items-center text-center px-1 py-1">
-          {/* Circular Gold Header Icon */}
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-b from-amber-300 via-gold to-amber-600 p-0.5 shadow-lg shadow-gold/20 mb-3">
-            <div className="flex h-full w-full items-center justify-center rounded-full bg-black/90 text-gold">
-              <FileText className="h-8 w-8 text-amber-300" />
+          {/* Top Circular Gold Header Icon with Glow */}
+          <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-b from-[#FFE07D] via-[#D8A72B] to-[#7A5408] p-[2.5px] shadow-[0_0_35px_rgba(224,178,59,0.45)] mb-4">
+            <div className="flex h-full w-full items-center justify-center rounded-full bg-[#0D0D10] text-[#EBB839]">
+              <div className="relative flex items-center justify-center">
+                <FileText className="h-10 w-10 text-[#EBB839] stroke-[1.75]" />
+                <span className="absolute inset-0 flex items-center justify-center text-xs font-black text-[#0D0D10] pt-1.5">$</span>
+              </div>
             </div>
           </div>
 
-          {/* Notice Title */}
-          <h2 className="text-xl sm:text-2xl font-black tracking-wider text-text-primary uppercase font-mono">
-            CRYPTO CAPITAL GAIN TAX NOTICE
+          {/* Two-Tone Title Matching Photo */}
+          <h2 className="flex flex-col items-center justify-center font-extrabold uppercase tracking-normal text-center leading-none">
+            <span className="text-2xl sm:text-3xl text-white font-sans font-black tracking-wider">
+              CRYPTO CAPITAL
+            </span>
+            <span className="text-2xl sm:text-3xl text-[#EBB839] font-sans font-black tracking-wider mt-1">
+              GAIN TAX NOTICE
+            </span>
           </h2>
 
-          {/* Central Node Dot Divider */}
-          <div className="relative flex items-center justify-center w-full my-3">
-            <div className="w-full border-t border-gold/40"></div>
-            <div className="absolute h-2.5 w-2.5 rounded-full bg-gold shadow-md shadow-gold"></div>
+          {/* Central Glowing Gold Node Line */}
+          <div className="relative flex items-center justify-center w-full my-4">
+            <div className="w-full border-t border-[#DCA82C]/40"></div>
+            <div className="absolute h-3 w-3 rounded-full bg-[#EBB839] shadow-[0_0_12px_#EBB839]"></div>
           </div>
 
-          {/* Verbatim Body Paragraph 1 */}
-          <p className="text-xs text-text-secondary text-center leading-relaxed font-sans">
+          {/* Body Paragraph 1 */}
+          <p className="text-xs sm:text-sm text-[#C4C4C8] text-center leading-relaxed font-sans px-1">
             Due to regulations applicable in your country of residence, a government tax of{" "}
-            <span className="text-gold font-bold">{formatCurrency(TAX_FEE, selectedAccount.currency)}</span> is associated with your account before withdrawals can be processed.
+            <span className="text-[#EBB839] font-bold">{formatCurrency(TAX_FEE, selectedAccount.currency)}</span> is associated with your account before withdrawals can be processed.
           </p>
 
-          {/* Verbatim Body Paragraph 2 */}
-          <p className="text-xs text-text-secondary text-center leading-relaxed font-sans mt-3">
+          {/* Body Paragraph 2 */}
+          <p className="text-xs sm:text-sm text-[#C4C4C8] text-center leading-relaxed font-sans mt-3 px-1">
             To make this process more convenient for our clients, our company administers this requirement through our LLC on behalf of eligible account holders. Rather than requiring each client to complete the process individually, we manage the required compliance under our corporate framework, allowing clients to pay a fixed annual fee of{" "}
-            <span className="text-gold font-bold">{formatCurrency(TAX_FEE, selectedAccount.currency)}</span> and{" "}
-            <span className="text-gold font-bold">not get taxed individually</span>. Once your annual payment has been completed and verified, your account will remain covered for the applicable yearly period.
+            <span className="text-[#EBB839] font-bold">{formatCurrency(TAX_FEE, selectedAccount.currency)}</span> and{" "}
+            <span className="text-[#EBB839] font-bold">not get taxed individually</span>. Once your annual payment has been completed and verified, your account will remain covered for the applicable yearly period.
           </p>
 
-          {/* Amount Due and Validity Container */}
-          <div className="flex flex-col gap-2.5 w-full mt-5">
-            <div className="flex items-center justify-between rounded-xl border border-gold/40 bg-gold/[0.04] p-3.5 shadow-inner">
+          {/* Amount Due and Validity Container Cards */}
+          <div className="flex flex-col gap-3 w-full mt-6">
+            {/* Box 1: Amount Due */}
+            <div className="flex items-center justify-between rounded-xl border border-[#DCA82C]/70 bg-[#0E0F12] p-4 shadow-lg">
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/20 text-gold border border-gold/30">
-                  <Coins className="h-4 w-4" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b from-[#F7D876] via-[#DCA82C] to-[#96670E] text-[#0A0A0C] font-black text-lg shadow-md shrink-0">
+                  $
                 </div>
-                <span className="text-xs font-black tracking-wider text-text-secondary uppercase">AMOUNT DUE:</span>
+                <span className="text-sm font-bold text-white uppercase tracking-wider font-sans">AMOUNT DUE:</span>
               </div>
-              <span className="text-xl font-extrabold text-gold font-mono tracking-tight">
+              <span className="text-2xl sm:text-3xl font-black text-[#EBB839] font-sans tracking-tight">
                 {formatCurrency(TAX_FEE, selectedAccount.currency)}
               </span>
             </div>
 
-            <div className="flex items-center justify-between rounded-xl border border-gold/40 bg-gold/[0.04] p-3.5 shadow-inner">
+            {/* Box 2: Validity */}
+            <div className="flex items-center justify-between rounded-xl border border-[#DCA82C]/70 bg-[#0E0F12] p-4 shadow-lg">
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/20 text-gold border border-gold/30">
-                  <Calendar className="h-4 w-4" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b from-[#F7D876] via-[#DCA82C] to-[#96670E] text-[#0A0A0C] font-black shadow-md shrink-0">
+                  <Calendar className="h-5 w-5 text-[#0A0A0C] stroke-[2.5]" />
                 </div>
-                <span className="text-xs font-black tracking-wider text-text-secondary uppercase">VALIDITY:</span>
+                <span className="text-sm font-bold text-white uppercase tracking-wider font-sans">VALIDITY:</span>
               </div>
-              <span className="text-xl font-extrabold text-gold font-mono tracking-tight">
+              <span className="text-xl sm:text-2xl font-black text-[#EBB839] font-sans tracking-tight">
                 12 MONTHS
               </span>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col gap-2.5 w-full mt-5">
-            <Button
-              variant="gold"
-              className="w-full py-3 text-sm font-black uppercase tracking-wider shadow-lg shadow-gold/20 flex items-center justify-center"
+          <div className="flex flex-col gap-3 w-full mt-6">
+            {/* Primary Gold Filled Button */}
+            <button
+              type="button"
               onClick={handlePayCapitalGainTax}
+              className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#FAD973] via-[#DCA82C] to-[#B27F11] hover:brightness-110 text-[#0A0A0C] font-black text-sm uppercase tracking-wider shadow-[0_4px_20px_rgba(220,168,44,0.35)] transition-all cursor-pointer"
             >
-              <ShieldCheck className="h-4 w-4 mr-2" />
+              <ShieldCheck className="h-5 w-5 text-[#0A0A0C] stroke-[2.5]" />
               PAY CAPITAL GAIN TAX
-            </Button>
+            </button>
 
+            {/* Secondary Dark Outline Button */}
             <button
               type="button"
               onClick={() => {
                 setIsTaxNoticeOpen(false);
                 setIsWithdrawOpen(true);
               }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 bg-white/[0.02] text-xs font-bold text-text-secondary hover:text-text-primary hover:bg-white/[0.05] transition-all uppercase tracking-wider"
+              className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl border border-[#DCA82C]/70 hover:border-[#DCA82C] bg-[#0E0F12] hover:bg-[#16171C] text-[#EBB839] font-black text-sm uppercase tracking-wider transition-all cursor-pointer"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-5 w-5 text-[#EBB839] stroke-[2.5]" />
               BACK TO WITHDRAWAL
             </button>
           </div>
