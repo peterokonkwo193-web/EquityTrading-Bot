@@ -14,7 +14,7 @@ import {
   Rocket, TrendingUp, Activity, Target, Wallet as WalletIcon,
   Bitcoin, Landmark, ArrowUpRight, ArrowDownRight,
   AlertTriangle, Square,
-  Loader2, Check, Clock
+  Loader2, Check
 } from "lucide-react";
 
 // Startup steps for the progressive initialization sequence
@@ -102,8 +102,6 @@ export default function TradingBotPage() {
   // Simulated Trades list and stats
   const [trades, setTrades] = useState<SimulatedTradeItem[]>([]);
   const [currentTrade, setCurrentTrade] = useState<SimulatedTradeItem | null>(null);
-  const [nextTradeCountdown, setNextTradeCountdown] = useState<number | null>(null);
-  const [activeTradeSecondsLeft, setActiveTradeSecondsLeft] = useState<number | null>(null);
 
   // Session parameters
   const [sessionProfit, setSessionProfit] = useState<number>(0);
@@ -264,13 +262,11 @@ export default function TradingBotPage() {
     setBotStatus("Monitoring");
     addLog(`Opened ${direction} position on ${selectedAsset} at ${entryPrice.toFixed(4)}`);
 
-    // Wait for the trade duration (10s) with live seconds countdown
+    // Wait for the trade duration (10s)
     for (let s = duration; s > 0; s--) {
       if (!isBotActiveRef.current) return;
-      setActiveTradeSecondsLeft(s);
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    setActiveTradeSecondsLeft(null);
     if (!isBotActiveRef.current) return;
 
     // Phase: Settle trade (Closing Position)
@@ -347,15 +343,13 @@ export default function TradingBotPage() {
       return;
     }
 
-    // Wait exactly 10 seconds before executing the next trade, with live countdown
+    // Wait 10 seconds before executing the next trade
     setBotStatus("Scanning");
     addLog("Searching for next high probability entry. Next trade in 10s...");
     for (let c = 10; c > 0; c--) {
       if (!isBotActiveRef.current || stopRequestedRef.current) break;
-      setNextTradeCountdown(c);
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    setNextTradeCountdown(null);
 
     if (stopRequestedRef.current) {
       stopRequestedRef.current = false;
@@ -431,8 +425,6 @@ export default function TradingBotPage() {
     } else {
       isBotActiveRef.current = false;
       setIsBotActive(false);
-      setNextTradeCountdown(null);
-      setActiveTradeSecondsLeft(null);
       setBotStatus("Idle");
       addLog("Bot stopped. Idle state.");
     }
@@ -676,22 +668,12 @@ export default function TradingBotPage() {
                   </span>
                 </div>
 
-                {/* 10-Second Wait Countdown Banner Between Trades */}
-                {nextTradeCountdown !== null && !stopRequested ? (
-                  <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-gold/10 border border-gold/25 text-xs text-text-primary animate-pulse">
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="h-3.5 w-3.5 text-gold animate-spin" />
-                      <span className="text-[11px] font-medium">Next trade executing in:</span>
-                    </div>
-                    <strong className="font-mono text-gold text-sm">{nextTradeCountdown}s</strong>
-                  </div>
-                ) : (
-                  <p className="text-[11px] font-medium text-gold truncate py-0.5">
-                    {stopRequested
-                      ? "Finishing position, then stopping..."
-                      : rotationMsg || "Scanning market structure..."}
-                  </p>
-                )}
+                {/* Status / Rotation Message */}
+                <p className="text-[11px] font-medium text-gold truncate py-0.5">
+                  {stopRequested
+                    ? "Finishing position, then stopping..."
+                    : rotationMsg || "Scanning market structure..."}
+                </p>
 
                 <Button
                   variant="danger"
@@ -744,25 +726,7 @@ export default function TradingBotPage() {
 
                     <div className="flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 border border-gold/30 text-[10px] font-mono font-semibold text-gold">
                       <span className="h-1.5 w-1.5 rounded-full bg-gold animate-ping" />
-                      Executing ({activeTradeSecondsLeft !== null ? `${activeTradeSecondsLeft}s left` : `${currentTrade.duration}s`})
-                    </div>
-                  </div>
-
-                  {/* Execution Progress Bar */}
-                  <div>
-                    <div className="flex justify-between text-[10px] text-text-muted mb-0.5 font-mono">
-                      <span>Progress</span>
-                      <span>{activeTradeSecondsLeft !== null ? Math.round(((currentTrade.duration - activeTradeSecondsLeft) / currentTrade.duration) * 100) : 0}%</span>
-                    </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-gold/70 to-gold transition-all duration-300"
-                        style={{
-                          width: activeTradeSecondsLeft !== null
-                            ? `${Math.min(100, Math.max(5, ((currentTrade.duration - activeTradeSecondsLeft + 1) / currentTrade.duration) * 100))}%`
-                            : "100%"
-                        }}
-                      />
+                      Executing
                     </div>
                   </div>
                 </Card>
