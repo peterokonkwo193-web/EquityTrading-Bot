@@ -20,6 +20,12 @@ export const registerUser = (input: { name: string; email: string; password: str
 export const verifyEmail = (email: string, code: string) =>
   apiRequest<{ user: User; token: string }>("/auth/verify-email", { method: "POST", body: { email, code } });
 
+export const resendVerificationCode = (email: string) =>
+  apiRequest<{ message: string; verificationCode?: string }>("/auth/resend-verification", {
+    method: "POST",
+    body: { email },
+  });
+
 export const loginUser = (email: string, password: string, rememberMe: boolean) =>
   apiRequest<{ token: string; user: User }>("/auth/login", {
     method: "POST",

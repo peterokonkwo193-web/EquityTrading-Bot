@@ -4,14 +4,17 @@ import { fetchTradingStats } from "@/lib/endpoints";
 
 const POLL_INTERVAL_MS = 5000;
 
+const statsCache: Record<string, TradingStats> = {};
+
 export function useTradingStats(accountId: string | null) {
-  const [stats, setStats] = useState<TradingStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<TradingStats | null>(() => (accountId ? statsCache[accountId] ?? null : null));
+  const [isLoading, setIsLoading] = useState(() => !(accountId && statsCache[accountId]));
 
   const refreshStats = useCallback(async () => {
     if (!accountId) return;
     try {
       const data = await fetchTradingStats(accountId);
+      statsCache[accountId] = data;
       setStats(data);
     } catch {}
   }, [accountId]);
@@ -23,13 +26,22 @@ export function useTradingStats(accountId: string | null) {
       return;
     }
 
+    if (statsCache[accountId]) {
+      setStats(statsCache[accountId]);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
+
     let cancelled = false;
-    setIsLoading(true);
 
     const poll = async () => {
       try {
         const data = await fetchTradingStats(accountId);
-        if (!cancelled) setStats(data);
+        if (!cancelled) {
+          statsCache[accountId] = data;
+          setStats(data);
+        }
       } catch {
         // keep last known stats on transient poll failures
       } finally {

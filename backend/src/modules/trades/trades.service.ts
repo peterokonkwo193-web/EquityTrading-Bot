@@ -210,7 +210,7 @@ export async function settleBotTrade(
         amount: new Prisma.Decimal(input.amount),
         profitLoss: pnl,
         status: "CLOSED",
-        durationSeconds: input.durationSeconds ?? 20,
+        durationSeconds: input.durationSeconds ?? TRADE_DURATION_SECONDS,
         openedAt: now,
         closesAt: now,
         closedAt: now,

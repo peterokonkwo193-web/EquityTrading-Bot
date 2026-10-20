@@ -9,12 +9,15 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export function Card({ hoverable = false, className, children, ...props }: CardProps) {
+  const hasCustomPadding = className && /\bp(-[xytrbl])?-(?:\[.+?\]|\d+(?:\.\d+)?)/.test(className);
+
   return (
     <motion.div
       whileHover={hoverable ? { y: -2 } : undefined}
       transition={{ duration: 0.15 }}
       className={clsx(
-        "glass rounded-2xl p-6 shadow-card",
+        "glass rounded-2xl shadow-card",
+        !hasCustomPadding && "p-6",
         hoverable && "hover:shadow-glow-blue transition-shadow",
         className
       )}

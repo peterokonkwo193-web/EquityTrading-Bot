@@ -5,6 +5,7 @@ import {
   me,
   register,
   verifyEmailHandler,
+  resendVerificationHandler,
   forgotPassword,
   resetPasswordHandler,
 } from "./auth.controller";
@@ -13,6 +14,7 @@ import {
   loginSchema,
   registerSchema,
   verifyEmailSchema,
+  resendVerificationSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
 } from "./auth.schema";
@@ -23,6 +25,7 @@ const router = Router();
 
 router.post("/register", validateBody(registerSchema), register);
 router.post("/verify-email", validateBody(verifyEmailSchema), verifyEmailHandler);
+router.post("/resend-verification", loginRateLimiter, validateBody(resendVerificationSchema), resendVerificationHandler);
 router.post("/login", loginRateLimiter, validateBody(loginSchema), login);
 router.post("/logout", logout);
 router.get("/me", authMiddleware, me);

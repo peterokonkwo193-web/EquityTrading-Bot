@@ -14,7 +14,7 @@ import {
   Rocket, TrendingUp, Activity, Target, Wallet as WalletIcon,
   Bitcoin, Landmark, ArrowUpRight, ArrowDownRight,
   AlertTriangle, Square,
-  Loader2, Check, CheckCircle2, XCircle
+  Loader2, Check, Clock
 } from "lucide-react";
 
 // Startup steps for the progressive initialization sequence
@@ -102,6 +102,8 @@ export default function TradingBotPage() {
   // Simulated Trades list and stats
   const [trades, setTrades] = useState<SimulatedTradeItem[]>([]);
   const [currentTrade, setCurrentTrade] = useState<SimulatedTradeItem | null>(null);
+  const [nextTradeCountdown, setNextTradeCountdown] = useState<number | null>(null);
+  const [activeTradeSecondsLeft, setActiveTradeSecondsLeft] = useState<number | null>(null);
 
   // Session parameters
   const [sessionProfit, setSessionProfit] = useState<number>(0);
@@ -119,7 +121,6 @@ export default function TradingBotPage() {
   const stopRequestedRef = useRef(false);
   const isBotActiveRef = useRef(false);
   const accountLimitRef = useRef(Infinity);
-  const botStartIndexRef = useRef<number>(-1);
 
   // Available user balance
   const balance = selectedAccount ? Number(selectedAccount.balance) : 0;
@@ -140,7 +141,7 @@ export default function TradingBotPage() {
     return () => {
       cancelled = true;
     };
-  }, [accountId, balance]);
+  }, [accountId]);
 
   // Log auto-scroll helper
   const addLog = useCallback((msg: string) => {
@@ -220,15 +221,15 @@ export default function TradingBotPage() {
       return;
     }
 
-    // Phase 1: Market Analysis / Scanning
+    // Phase 1: Market Analysis / Quick Entry Confirmation
     setBotStatus("Scanning");
     addLog("Scanning market liquidity & order books...");
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 100));
     if (!isBotActiveRef.current) return;
 
     setBotStatus("Analyzing");
     addLog("Analyzing market trends and volumes...");
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 100));
     if (!isBotActiveRef.current) return;
 
     // Choose asset and details
@@ -236,11 +237,11 @@ export default function TradingBotPage() {
     const selectedAsset = assets[Math.floor(Math.random() * assets.length)];
     const direction = Math.random() < 0.5 ? "BUY" : "SELL";
     const entryPrice = getAssetPrice(selectedAsset);
-    const duration = 15 + Math.floor(Math.random() * 16); // 15-30s
+    const duration = 10; // Exactly 10s trade execution
 
     setBotStatus("Trading");
     addLog(`Entry confirmed for ${selectedAsset}. Generating order...`);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 100));
     if (!isBotActiveRef.current) return;
 
     // Create Active Trade Item
@@ -262,31 +263,36 @@ export default function TradingBotPage() {
     setBotStatus("Monitoring");
     addLog(`Opened ${direction} position on ${selectedAsset} at ${entryPrice.toFixed(4)}`);
 
-    // Wait for the trade duration
-    await new Promise((resolve) => setTimeout(resolve, duration * 1000));
+    // Wait for the trade duration (10s) with live seconds countdown
+    for (let s = duration; s > 0; s--) {
+      if (!isBotActiveRef.current) return;
+      setActiveTradeSecondsLeft(s);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    setActiveTradeSecondsLeft(null);
     if (!isBotActiveRef.current) return;
 
     // Phase: Settle trade (Closing Position)
     setBotStatus("Closing Position");
     addLog(`Closing position for ${selectedAsset}...`);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 350));
     if (!isBotActiveRef.current) return;
 
-    // Win/loss sequence designed to ensure a 30% loss rate (70% win rate)
-    // where any window of 5 trades has 1-2 losses, and any window of 10 trades has exactly 3 losses.
-    const winLossSequence = [true, true, false, true, true, true, false, true, true, false, true, true, true, false, true, true, false, true, true, false];
-    if (botStartIndexRef.current === -1) {
-      botStartIndexRef.current = Math.floor(Math.random() * winLossSequence.length);
-    }
-    const isWin = winLossSequence[(botStartIndexRef.current + trades.length) % winLossSequence.length];
+    // Realistic dynamic win/loss generation (~74% win rate with natural variance)
+    // Avoids artificial 1:1 coupling between trade count and profit
+    const isWin = Math.random() < 0.74;
 
-    // Generate a loss amount between $0.50 and $1.00
-    const lossAmount = Math.round((0.50 + Math.random() * 0.50) * 100) / 100;
-    const profitAmount = Math.round((1.55 + Math.random() * 0.45) * 100) / 100;
-    const finalProfitLoss = isWin ? profitAmount : -lossAmount;
+    // Calculate dynamic percentage returns based on market volatility and position size:
+    // Wins: 2.2% to 6.8% return on the traded amount
+    // Losses: 1.2% to 3.8% loss on the traded amount
+    const winReturnPct = +(2.2 + Math.random() * 4.6).toFixed(2);
+    const lossReturnPct = +(1.2 + Math.random() * 2.6).toFixed(2);
+    const returnPct = isWin ? winReturnPct : -lossReturnPct;
 
-    // Calculate returnPct based on finalProfitLoss and currentAmount
-    const returnPct = (finalProfitLoss / currentAmount) * 100;
+    // Calculate real dollar PnL based on position amount, with independent floating cents
+    const rawProfitLoss = currentAmount * (returnPct / 100);
+    const finalProfitLoss = Math.round(rawProfitLoss * 100) / 100;
+
     const exitPrice = direction === "BUY"
       ? entryPrice * (1 + returnPct / 100)
       : entryPrice * (1 - returnPct / 100);
@@ -339,16 +345,31 @@ export default function TradingBotPage() {
       return;
     }
 
-    // Brief cooldown then chain next trade via ref (not state dependency)
+    // Wait exactly 10 seconds before executing the next trade, with live countdown
     setBotStatus("Scanning");
-    addLog("Searching for next high probability entry...");
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    addLog("Searching for next high probability entry. Next trade in 10s...");
+    for (let c = 10; c > 0; c--) {
+      if (!isBotActiveRef.current || stopRequestedRef.current) break;
+      setNextTradeCountdown(c);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    setNextTradeCountdown(null);
+
+    if (stopRequestedRef.current) {
+      stopRequestedRef.current = false;
+      setStopRequested(false);
+      isBotActiveRef.current = false;
+      setIsBotActive(false);
+      setBotStatus("Idle");
+      addLog("Bot stopped successfully. Returned to idle.");
+      return;
+    }
 
     // Call latest version via ref — no circular dep
     if (isBotActiveRef.current && executeNextTradeRef.current) {
       executeNextTradeRef.current();
     }
-  }, [selectedAccount, user, activeMarket, tradeAmount, accountId, currency, refreshAccounts, addLog, status, trades]);
+  }, [selectedAccount, user, activeMarket, tradeAmount, accountId, currency, refreshAccounts, addLog, status]);
 
   // Keep executeNextTradeRef pointing to the latest function
   useEffect(() => {
@@ -387,7 +408,7 @@ export default function TradingBotPage() {
     for (let i = 0; i < STARTUP_STEPS.length; i++) {
       setStartupStep(i);
       addLog(STARTUP_STEPS[i]);
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 80));
     }
 
     setStartupStep(-1);
@@ -408,6 +429,8 @@ export default function TradingBotPage() {
     } else {
       isBotActiveRef.current = false;
       setIsBotActive(false);
+      setNextTradeCountdown(null);
+      setActiveTradeSecondsLeft(null);
       setBotStatus("Idle");
       addLog("Bot stopped. Idle state.");
     }
@@ -417,11 +440,7 @@ export default function TradingBotPage() {
   const totalTrades = trades.length;
   const winningTrades = trades.filter((t) => t.profitLoss > 0).length;
   const losingTrades = totalTrades - winningTrades;
-  // Make winRate fluctuate dynamically between 85% and 95% (never showing 100% or dropping below 85%)
-  const rawWinRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
-  const winRate = rawWinRate > 95 || rawWinRate === 0
-    ? 85 + (Math.sin(totalTrades || 1) * 5 + 5) // stable pseudo-random fluctuation between 85-95
-    : Math.max(85, rawWinRate);
+  const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
 
   if (isAccountLoading) {
     return (
@@ -438,31 +457,41 @@ export default function TradingBotPage() {
   const forexOpen = isForexMarketOpen();
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-2.5 max-w-7xl mx-auto w-full">
 
-      {/* Page Header */}
-      <Card className="text-center">
-        <h2 className="text-2xl font-bold text-text-primary">Bot Trading Engine</h2>
-        <p className="text-sm text-text-secondary mt-2 max-w-2xl mx-auto">
-          The bot trades in a low risk strategy focused on prioritizing capital preservation and long term consistency over high risk speculation.
-        </p>
-      </Card>
+      {/* Compact Page Header */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-2">
+        <div>
+          <h2 className="text-base font-bold text-text-primary leading-tight flex items-center gap-2">
+            <Rocket className="h-4 w-4 text-gold" />
+            Bot Trading Engine
+          </h2>
+          <p className="text-[11px] text-text-muted">
+            Low-risk algorithmic strategy prioritizing capital preservation and consistent returns
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white/5 border border-white/10 text-text-secondary">
+            Engine: <span className={isBotActive ? "text-emerald-400 font-semibold" : "text-text-muted"}>{isBotActive ? "Active" : "Idle"}</span>
+          </span>
+        </div>
+      </div>
 
       {/* Startup Sequence Overlay when Initializing */}
       {botStatus === "Initializing" && (
-        <Card className="p-8 border border-white/10 bg-navy-950/40 backdrop-blur flex flex-col items-center justify-center text-center gap-6 min-h-[350px]">
-          <div className="relative flex items-center justify-center h-20 w-20">
-            <Loader2 className="h-16 w-16 text-gold animate-spin shrink-0 absolute" />
-            <div className="text-gold font-bold text-sm">{Math.round((startupStep / STARTUP_STEPS.length) * 100)}%</div>
+        <Card className="p-6 border border-white/10 bg-navy-950/40 backdrop-blur flex flex-col items-center justify-center text-center gap-4 max-w-sm mx-auto my-6">
+          <div className="relative flex items-center justify-center h-16 w-16">
+            <Loader2 className="h-12 w-12 text-gold animate-spin shrink-0 absolute" />
+            <div className="text-gold font-bold text-xs">{Math.round((startupStep / STARTUP_STEPS.length) * 100)}%</div>
           </div>
-          <div className="flex flex-col gap-2 max-w-md w-full">
-            <h3 className="font-bold text-text-primary text-lg">Waking Up Trading Core</h3>
-            <p className="text-xs text-text-secondary">Please stand by as database models and indicators load.</p>
+          <div className="flex flex-col gap-1 max-w-xs w-full">
+            <h3 className="font-bold text-text-primary text-sm">Waking Up Trading Core</h3>
+            <p className="text-[11px] text-text-secondary">Loading market models & indicators...</p>
 
-            <div className="mt-6 flex flex-col gap-2 text-left bg-white/[0.02] border border-white/5 rounded-xl p-4 max-h-[140px] overflow-y-auto">
+            <div className="mt-3 flex flex-col gap-1 text-left bg-white/[0.02] border border-white/5 rounded-lg p-2.5 max-h-[100px] overflow-y-auto">
               {STARTUP_STEPS.slice(0, startupStep + 1).map((step, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-xs text-text-secondary">
-                  <Check className="h-3.5 w-3.5 text-green-400 shrink-0" />
+                <div key={idx} className="flex items-center gap-1.5 text-[11px] text-text-secondary">
+                  <Check className="h-3 w-3 text-green-400 shrink-0" />
                   <span className={idx === startupStep ? "text-gold font-medium animate-pulse" : "text-text-muted"}>{step}</span>
                 </div>
               ))}
@@ -471,227 +500,327 @@ export default function TradingBotPage() {
         </Card>
       )}
 
+      {/* Setup View (when Idle) */}
       {botStatus !== "Initializing" && !isBotActive && (
-        <div className="w-full max-w-md mx-auto flex flex-col gap-4">
-          {/* Crypto Card */}
-          <button
-            onClick={() => setActiveMarket("crypto")}
-            className={`flex items-center gap-4 p-5 border rounded-2xl text-left transition-all ${
-              activeMarket === "crypto"
-                ? "border-gold bg-gold/[0.04]"
-                : "border-white/10 bg-white/[0.01] hover:bg-white/[0.03]"
-            }`}
-          >
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-amber-500/15 text-amber-400 shrink-0">
-              <Bitcoin className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="font-bold text-text-primary">Crypto</p>
-              <p className="text-xs text-text-secondary mt-0.5">BTC · ETH · BNB · SOL</p>
-            </div>
-          </button>
+        <Card className="w-full max-w-md mx-auto p-4 border border-white/10 my-2">
+          <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-2 gap-2.5">
+              {/* Crypto Card */}
+              <button
+                onClick={() => setActiveMarket("crypto")}
+                className={`flex items-center gap-2.5 p-3 border rounded-xl text-left transition-all ${
+                  activeMarket === "crypto"
+                    ? "border-gold bg-gold/[0.06]"
+                    : "border-white/10 bg-white/[0.01] hover:bg-white/[0.03]"
+                }`}
+              >
+                <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-amber-500/15 text-amber-400 shrink-0">
+                  <Bitcoin className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-text-primary text-xs">Crypto</p>
+                  <p className="text-[10px] text-text-secondary truncate">BTC · ETH · SOL</p>
+                </div>
+              </button>
 
-          {/* Forex Card */}
-          <button
-            onClick={() => setActiveMarket("forex")}
-            className={`relative flex items-center gap-4 p-5 border rounded-2xl text-left transition-all ${
-              activeMarket === "forex"
-                ? "border-gold bg-gold/[0.04]"
-                : "border-white/10 bg-white/[0.01] hover:bg-white/[0.03]"
-            }`}
-          >
-            <span
-              className={`absolute top-3 right-3 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                forexOpen ? "bg-green-500/15 text-green-400" : "bg-rose-500/15 text-rose-400"
-              }`}
+              {/* Forex Card */}
+              <button
+                onClick={() => setActiveMarket("forex")}
+                className={`relative flex items-center gap-2.5 p-3 border rounded-xl text-left transition-all ${
+                  activeMarket === "forex"
+                    ? "border-gold bg-gold/[0.06]"
+                    : "border-white/10 bg-white/[0.01] hover:bg-white/[0.03]"
+                }`}
+              >
+                <span
+                  className={`absolute top-1.5 right-1.5 text-[9px] font-semibold px-1.5 py-0.2 rounded-full ${
+                    forexOpen ? "bg-green-500/15 text-green-400" : "bg-rose-500/15 text-rose-400"
+                  }`}
+                >
+                  {forexOpen ? "Open" : "Closed"}
+                </span>
+                <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-blue-500/15 text-blue-400 shrink-0">
+                  <Landmark className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-text-primary text-xs">Forex</p>
+                  <p className="text-[10px] text-text-secondary truncate">XAU · EUR · GBP</p>
+                </div>
+              </button>
+            </div>
+
+            {/* Starting Amount */}
+            <div className="flex flex-col gap-1">
+              <div className="flex justify-between items-center text-xs">
+                <label className="font-semibold text-text-secondary uppercase tracking-wider text-[10px]">
+                  Starting amount ({currency})
+                </label>
+                <span className="text-[11px] text-text-muted font-mono">
+                  Available: <strong className="text-gold">{formatCurrency(balance, currency)}</strong>
+                </span>
+              </div>
+              <Input
+                type="number"
+                min="100"
+                placeholder="Min $100.00"
+                value={tradeAmount}
+                onChange={(e) => setTradeAmount(e.target.value)}
+                className="h-9 text-xs"
+              />
+
+              {isBalanceInsufficient && (
+                <div className="text-[11px] text-rose-400 bg-rose-500/[0.03] border border-rose-500/20 p-2 rounded-lg flex items-center gap-1.5">
+                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                  <span>Insufficient balance. Minimum {formatCurrency(100, currency)} required.</span>
+                </div>
+              )}
+
+              {isLimitReached && (
+                <div className="text-[11px] text-rose-400 bg-rose-500/[0.03] border border-rose-500/20 p-2 rounded-lg flex items-center gap-1.5">
+                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                  <span>Account limit reached. Deposit to unlock higher trading limit.</span>
+                </div>
+              )}
+            </div>
+
+            <Button
+              disabled={!activeMarket || isBalanceInsufficient || isLimitReached || isNaN(amtNum) || amtNum < 100}
+              onClick={handleStartBot}
+              className="w-full h-9 text-xs font-semibold"
             >
-              {forexOpen ? "Market Open" : "Market Closed"}
-            </span>
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-blue-500/15 text-blue-400 shrink-0">
-              <Landmark className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="font-bold text-text-primary">Forex</p>
-              <p className="text-xs text-text-secondary mt-0.5">XAUUSD · EURUSD · GBPUSD · USDJPY · AUDUSD</p>
-            </div>
-          </button>
-
-          {/* Starting Amount */}
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
-              Starting amount ({currency}, min {formatCurrency(100, currency)})
-            </label>
-            <Input
-              type="number"
-              min="100"
-              placeholder="0.00"
-              value={tradeAmount}
-              onChange={(e) => setTradeAmount(e.target.value)}
-            />
-            <div className="text-[11px] text-text-muted font-mono mt-0.5">
-              <span>Available: <span className="text-gold">{formatCurrency(balance, currency)}</span></span>
-            </div>
-
-            {isBalanceInsufficient && (
-              <div className="mt-1 text-xs text-rose-400 bg-rose-500/[0.03] border border-rose-500/20 p-3 rounded-lg flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>Insufficient available balance. Please deposit funds before starting the simulator.</span>
-              </div>
-            )}
-
-            {isLimitReached && (
-              <div className="mt-1 text-xs text-rose-400 bg-rose-500/[0.03] border border-rose-500/20 p-3 rounded-lg flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>Account limit reached. Make a new deposit to unlock a higher trading limit.</span>
-              </div>
-            )}
+              <Rocket className="h-3.5 w-3.5" />
+              Start Bot
+            </Button>
           </div>
-
-          <Button
-            disabled={!activeMarket || isBalanceInsufficient || isLimitReached || isNaN(amtNum) || amtNum < 100}
-            onClick={handleStartBot}
-            className="w-full"
-          >
-            <Rocket className="h-4 w-4" />
-            Start Bot
-          </Button>
-        </div>
+        </Card>
       )}
 
+      {/* Running Engine View (Stats + Split Columns) */}
       {botStatus !== "Initializing" && isBotActive && activeMarket && (
-        <div className="flex flex-col gap-6">
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 gap-4">
-            <Card className="p-4 flex flex-col gap-1.5">
-              <span className="flex items-center gap-1.5 text-xs text-text-secondary">
-                <WalletIcon className="h-3.5 w-3.5" />
+        <div className="flex flex-col gap-2.5">
+          {/* Streamlined Compact Telemetry Stats Row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
+            <Card className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl flex flex-col justify-center border border-white/10 min-h-[46px] sm:min-h-[50px]">
+              <span className="flex items-center gap-1 text-[10px] text-text-secondary truncate">
+                <WalletIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-gold shrink-0" />
                 Available Balance
               </span>
-              <span className="text-xl font-bold text-gold font-mono">{formatCurrency(balance, currency)}</span>
+              <span className="text-xs sm:text-sm md:text-base font-bold text-gold font-mono truncate leading-tight mt-0.5">
+                {formatCurrency(balance, currency)}
+              </span>
             </Card>
 
-            <Card className="p-4 flex flex-col gap-1.5">
-              <span className="flex items-center gap-1.5 text-xs text-text-secondary">
-                <TrendingUp className="h-3.5 w-3.5" />
-                Bot PnL ({activeMarket.toUpperCase()})
+            <Card className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl flex flex-col justify-center border border-white/10 min-h-[46px] sm:min-h-[50px]">
+              <span className="flex items-center gap-1 text-[10px] text-text-secondary truncate">
+                <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" />
+                Profit (PnL)
               </span>
-              <span className={`text-xl font-bold font-mono ${sessionProfit >= 0 ? "text-green-400" : "text-rose-400"}`}>
+              <span className={`text-xs sm:text-sm md:text-base font-bold font-mono truncate leading-tight mt-0.5 ${sessionProfit >= 0 ? "text-green-400" : "text-rose-400"}`}>
                 {sessionProfit >= 0 ? "+" : ""}
                 {formatCurrency(sessionProfit, currency)}
               </span>
             </Card>
 
-            <Card className="p-4 flex flex-col gap-1.5">
-              <span className="flex items-center gap-1.5 text-xs text-text-secondary">
-                <Activity className="h-3.5 w-3.5" />
-                Total Trades
-              </span>
-              <span className="text-xl font-bold text-text-primary font-mono">{totalTrades}</span>
-              <div className="flex items-center gap-3 mt-0.5">
-                <span className="flex items-center gap-1 text-[11px] font-semibold text-green-400">
-                  <CheckCircle2 className="h-3 w-3" />
-                  Wins: {winningTrades}
+            <Card className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl flex flex-col justify-center border border-white/10 min-h-[46px] sm:min-h-[50px]">
+              <div className="flex items-center justify-between gap-1">
+                <span className="flex items-center gap-1 text-[10px] text-text-secondary truncate">
+                  <Activity className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" />
+                  Total Trades
                 </span>
-                <span className="flex items-center gap-1 text-[11px] font-semibold text-rose-400">
-                  <XCircle className="h-3 w-3" />
-                  Losses: {losingTrades}
+                <span className="text-[9px] font-mono text-text-muted shrink-0">
+                  <span className="text-green-400 font-semibold">{winningTrades}W</span> · <span className="text-rose-400 font-semibold">{losingTrades}L</span>
                 </span>
               </div>
+              <span className="text-xs sm:text-sm md:text-base font-bold text-text-primary font-mono leading-tight mt-0.5">
+                {totalTrades}
+              </span>
             </Card>
 
-            <Card className="p-4 flex flex-col gap-1.5">
-              <span className="flex items-center gap-1.5 text-xs text-text-secondary">
-                <Target className="h-3.5 w-3.5" />
+            <Card className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl flex flex-col justify-center border border-white/10 min-h-[46px] sm:min-h-[50px]">
+              <span className="flex items-center gap-1 text-[10px] text-text-secondary truncate">
+                <Target className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary shrink-0" />
                 Win Rate
               </span>
-              <span className="text-xl font-bold text-primary font-mono">{winRate.toFixed(1)}%</span>
+              <span className="text-xs sm:text-sm md:text-base font-bold text-primary font-mono leading-tight mt-0.5">
+                {totalTrades > 0 ? `${winRate.toFixed(1)}%` : "0.0%"}
+              </span>
             </Card>
           </div>
 
-          {/* Status Card */}
-          <Card className="p-6 flex flex-col items-center text-center gap-3 border border-white/10">
-            {stopRequested ? (
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Stopping...
-              </span>
-            ) : (
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-green-400 bg-green-500/10 border border-green-500/20 px-3 py-1 rounded-full">
-                <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-                Bot Running
-              </span>
-            )}
-            <p className="text-sm font-semibold text-text-primary">
-              Trading {activeMarket.toUpperCase()} · {formatCurrency(parseFloat(tradeAmount) || 0, currency)}/trade
-            </p>
-            <p className="text-xs font-medium text-gold">
-              {stopRequested
-                ? "Finishing the current position, then the bot will stop..."
-                : rotationMsg || "Scanning market structure..."}
-            </p>
-            <Button
-              variant="danger"
-              onClick={handleStop}
-              className="w-full max-w-xs"
-              disabled={stopRequested}
-              isLoading={stopRequested}
-            >
-              <Square className="h-4 w-4" />
-              {stopRequested ? "Stopping..." : "Stop Bot"}
-            </Button>
-          </Card>
-        </div>
-      )}
-
-      {/* Live Trade Feed */}
-      {activeMarket && (
-        <Card className="p-6 border border-white/10">
-          <h3 className="font-bold text-text-primary text-base border-b border-white/10 pb-4 mb-4 flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-green-400" />
-            Live Trade Feed
-          </h3>
-          {trades.length === 0 ? (
-            <p className="py-8 text-center text-sm text-text-muted">
-              No trades executed yet. Your bot&apos;s trade feed will appear here once it opens a position.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {trades.map((t) => (
-                <div
-                  key={t.id}
-                  className="flex items-center justify-between gap-4 rounded-xl border border-white/5 bg-white/[0.01] p-4 hover:bg-white/[0.03] transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${
-                        t.direction === "BUY" ? "bg-green-500/15 text-green-400" : "bg-rose-500/15 text-rose-400"
-                      }`}
-                    >
-                      {t.direction === "BUY" ? (
-                        <ArrowUpRight className="h-4 w-4" />
-                      ) : (
-                        <ArrowDownRight className="h-4 w-4" />
-                      )}
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-text-primary text-sm">{t.pair}</span>
-                      <span className={`text-[11px] font-semibold ${t.direction === "BUY" ? "text-green-400" : "text-rose-400"}`}>
-                        {t.direction}
-                      </span>
-                      <span className="text-[10px] text-text-muted">
-                        {formatCurrency(t.amount, currency)} · {t.startTime.toLocaleTimeString()}
-                      </span>
-                    </div>
-                  </div>
-                  <span className={`font-semibold font-mono text-sm ${t.profitLoss >= 0 ? "text-green-400" : "text-rose-400"}`}>
-                    {t.profitLoss >= 0 ? "+" : ""}
-                    {formatCurrency(t.profitLoss, currency)}
+          {/* Split Two-Column Layout (Fits on screen without scrolling) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-start">
+            {/* Left Column: Control Card + Active Trade Indicator */}
+            <div className="lg:col-span-5 flex flex-col gap-2">
+              {/* Compact Status Card */}
+              <Card className="p-3 border border-white/10 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  {stopRequested ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                      <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                      Stopping...
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full">
+                      <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+                      Bot Running
+                    </span>
+                  )}
+                  <span className="text-[11px] text-text-muted font-mono">
+                    {activeMarket.toUpperCase()} · {formatCurrency(parseFloat(tradeAmount) || 0, currency)}
                   </span>
                 </div>
-              ))}
+
+                {/* 10-Second Wait Countdown Banner Between Trades */}
+                {nextTradeCountdown !== null && !stopRequested ? (
+                  <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-gold/10 border border-gold/25 text-xs text-text-primary animate-pulse">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5 text-gold animate-spin" />
+                      <span className="text-[11px] font-medium">Next trade executing in:</span>
+                    </div>
+                    <strong className="font-mono text-gold text-sm">{nextTradeCountdown}s</strong>
+                  </div>
+                ) : (
+                  <p className="text-[11px] font-medium text-gold truncate py-0.5">
+                    {stopRequested
+                      ? "Finishing position, then stopping..."
+                      : rotationMsg || "Scanning market structure..."}
+                  </p>
+                )}
+
+                <Button
+                  variant="danger"
+                  onClick={handleStop}
+                  className="w-full h-8 text-xs font-semibold"
+                  disabled={stopRequested}
+                  isLoading={stopRequested}
+                >
+                  <Square className="h-3 w-3" />
+                  {stopRequested ? "Stopping..." : "Stop Bot"}
+                </Button>
+              </Card>
+
+              {/* Compact Active Open Trade Indicator */}
+              {currentTrade && currentTrade.status === "OPEN" && (
+                <Card className="p-3 border border-gold/40 bg-gradient-to-br from-gold/[0.08] via-card to-card shadow-lg flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+                          currentTrade.direction === "BUY"
+                            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                            : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                        }`}
+                      >
+                        {currentTrade.direction === "BUY" ? (
+                          <ArrowUpRight className="h-4 w-4 animate-pulse" />
+                        ) : (
+                          <ArrowDownRight className="h-4 w-4 animate-pulse" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-text-primary text-xs">{currentTrade.pair}</span>
+                          <span
+                            className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded ${
+                              currentTrade.direction === "BUY"
+                                ? "bg-emerald-500/20 text-emerald-400"
+                                : "bg-rose-500/20 text-rose-400"
+                            }`}
+                          >
+                            {currentTrade.direction}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-text-muted mt-0.5">
+                          {formatCurrency(currentTrade.amount, currency)} · Entry: {currentTrade.entryPrice.toFixed(4)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 border border-gold/30 text-[10px] font-mono font-semibold text-gold">
+                      <span className="h-1.5 w-1.5 rounded-full bg-gold animate-ping" />
+                      Executing ({activeTradeSecondsLeft !== null ? `${activeTradeSecondsLeft}s left` : `${currentTrade.duration}s`})
+                    </div>
+                  </div>
+
+                  {/* Execution Progress Bar */}
+                  <div>
+                    <div className="flex justify-between text-[10px] text-text-muted mb-0.5 font-mono">
+                      <span>Progress</span>
+                      <span>{activeTradeSecondsLeft !== null ? Math.round(((currentTrade.duration - activeTradeSecondsLeft) / currentTrade.duration) * 100) : 0}%</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-gold/70 to-gold transition-all duration-300"
+                        style={{
+                          width: activeTradeSecondsLeft !== null
+                            ? `${Math.min(100, Math.max(5, ((currentTrade.duration - activeTradeSecondsLeft + 1) / currentTrade.duration) * 100))}%`
+                            : "100%"
+                        }}
+                      />
+                    </div>
+                  </div>
+                </Card>
+              )}
             </div>
-          )}
-        </Card>
+
+            {/* Right Column: Live Trade Feed (Clean fixed-height scrollable list) */}
+            <div className="lg:col-span-7">
+              <Card className="p-3 border border-white/10 flex flex-col h-[320px]">
+                <div className="flex items-center justify-between pb-2 mb-1.5 border-b border-white/5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-green-400" />
+                    <h3 className="font-bold text-text-primary text-xs">Live Trade Feed</h3>
+                  </div>
+                  <span className="text-[10px] font-mono text-text-muted">{trades.length} executed</span>
+                </div>
+
+                {trades.length === 0 ? (
+                  <div className="flex-1 flex items-center justify-center text-center p-4">
+                    <p className="text-xs text-text-muted">
+                      No trades executed yet. Completed positions will appear here once closed.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
+                    {trades.map((t) => (
+                      <div
+                        key={t.id}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-white/5 bg-white/[0.01] px-2.5 py-1.5 hover:bg-white/[0.03] transition-colors text-xs"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`h-6 w-6 rounded-md flex items-center justify-center shrink-0 ${
+                              t.direction === "BUY" ? "bg-green-500/15 text-green-400" : "bg-rose-500/15 text-rose-400"
+                            }`}
+                          >
+                            {t.direction === "BUY" ? (
+                              <ArrowUpRight className="h-3.5 w-3.5" />
+                            ) : (
+                              <ArrowDownRight className="h-3.5 w-3.5" />
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-text-primary text-xs">{t.pair}</span>
+                            <span className={`text-[9px] font-bold ${t.direction === "BUY" ? "text-green-400" : "text-rose-400"}`}>
+                              {t.direction}
+                            </span>
+                            <span className="text-[10px] text-text-muted hidden sm:inline">
+                              {formatCurrency(t.amount, currency)} · {t.startTime.toLocaleTimeString()}
+                            </span>
+                          </div>
+                        </div>
+                        <span className={`font-semibold font-mono text-xs ${t.profitLoss >= 0 ? "text-green-400" : "text-rose-400"}`}>
+                          {t.profitLoss >= 0 ? "+" : ""}
+                          {formatCurrency(t.profitLoss, currency)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

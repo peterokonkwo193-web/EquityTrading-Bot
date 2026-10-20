@@ -82,7 +82,7 @@ export function Sidebar({ onLogoutClick }: { onLogoutClick: () => void }) {
           }
 
           return (
-            <Link key={item.href} href={item.href} className="relative block" title={collapsed ? item.label : undefined}>
+            <Link key={item.href} href={item.href} prefetch={true} className="relative block" title={collapsed ? item.label : undefined}>
               {content}
             </Link>
           );

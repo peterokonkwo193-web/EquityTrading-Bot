@@ -15,21 +15,29 @@ import { Testimonials } from "@/components/dashboard/Testimonials";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 
+const walletCache: Record<string, WalletType> = {};
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const { selectedAccount, isLoading: isAccountLoading } = useAccount();
   const accountId = selectedAccount?.id ?? null;
   const { stats, isLoading: isStatsLoading } = useTradingStats(accountId);
-  const [wallet, setWallet] = useState<WalletType | null>(null);
+  const [wallet, setWallet] = useState<WalletType | null>(() => (accountId ? walletCache[accountId] ?? null : null));
   const [sentiment, setSentiment] = useState<{ label: "Bullish" | "Bearish"; confidence: number } | null>(null);
 
   useEffect(() => {
     if (!accountId) return;
+    if (walletCache[accountId]) {
+      setWallet(walletCache[accountId]);
+    }
     let cancelled = false;
     const load = () => {
       fetchWallet(accountId)
         .then((data) => {
-          if (!cancelled) setWallet(data);
+          if (!cancelled) {
+            walletCache[accountId] = data;
+            setWallet(data);
+          }
         })
         .catch(() => {});
     };

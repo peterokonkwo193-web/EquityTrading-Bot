@@ -70,12 +70,15 @@ const DEPOSIT_ADDRESSES: Record<string, string> = {
   "USDC_BSC (BEP20)": "0xc7ea91890210119F06ABe62d437246235C9d6a39",
 };
 
+const walletCache: Record<string, Wallet> = {};
+
 export default function WalletPage() {
   const { selectedAccount } = useAccount();
   const status = useStatus();
 
-  const [wallet, setWallet] = useState<Wallet | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const accountId = selectedAccount?.id ?? null;
+  const [wallet, setWallet] = useState<Wallet | null>(() => (accountId ? walletCache[accountId] ?? null : null));
+  const [isLoading, setIsLoading] = useState(() => !(accountId && walletCache[accountId]));
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [isMembershipGateOpen, setIsMembershipGateOpen] = useState(false);
@@ -115,8 +118,6 @@ export default function WalletPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const accountId = selectedAccount?.id ?? null;
-
   // Auto-adjust networks on asset change
   useEffect(() => {
     const networks = NETWORK_MAPPING[depAsset] || [];
@@ -136,9 +137,10 @@ export default function WalletPage() {
     if (!accountId) return;
     try {
       const data = await fetchWallet(accountId);
+      walletCache[accountId] = data;
       setWallet(data);
     } catch {
-      setWallet(null);
+      if (!walletCache[accountId]) setWallet(null);
     } finally {
       setIsLoading(false);
     }
@@ -146,13 +148,21 @@ export default function WalletPage() {
 
   useEffect(() => {
     if (!accountId) return;
-    setIsLoading(true);
+    if (walletCache[accountId]) {
+      setWallet(walletCache[accountId]);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
     loadWallet();
 
     // Poll so admin-approved deposits/withdrawals appear here without a manual refresh.
     const interval = setInterval(() => {
       fetchWallet(accountId)
-        .then(setWallet)
+        .then((data) => {
+          walletCache[accountId] = data;
+          setWallet(data);
+        })
         .catch(() => {});
     }, 8000);
     return () => clearInterval(interval);

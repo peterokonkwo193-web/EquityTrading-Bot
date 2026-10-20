@@ -92,6 +92,32 @@ export async function verifyEmail(email: string, code: string) {
   return { user: toPublicUser(updated), token };
 }
 
+export async function resendVerificationCode(email: string) {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    return { message: "If an account exists with this email, a verification code has been sent." };
+  }
+  if (user.emailVerified) {
+    throw new AppError("This account is already verified. Please log in.", 400);
+  }
+
+  const verificationCode = generateVerificationCode();
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      verificationCode,
+      verificationExpiresAt: new Date(Date.now() + VERIFICATION_CODE_TTL_MS),
+    },
+  });
+
+  const emailDelivered = await sendVerificationEmail(user.email, verificationCode);
+
+  return {
+    message: "Verification code sent",
+    verificationCode: emailDelivered ? undefined : verificationCode,
+  };
+}
+
 export async function loginUser(email: string, password: string) {
   const user = await prisma.user.findUnique({ where: { email } });
 

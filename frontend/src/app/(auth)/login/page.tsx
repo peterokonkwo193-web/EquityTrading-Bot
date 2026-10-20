@@ -21,6 +21,7 @@ export default function LoginPage() {
   const status = useStatus();
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   const {
     register,
@@ -43,11 +44,15 @@ export default function LoginPage() {
 
   const onSubmit = async (values: LoginFormInput) => {
     status.clear();
+    setUnverifiedEmail(null);
     try {
       await login(values.email, values.password, rememberMe);
       router.replace("/dashboard");
     } catch (err) {
       const message = err instanceof ApiError ? err.message : "Login failed. Please try again.";
+      if (message.toLowerCase().includes("verify your email")) {
+        setUnverifiedEmail(values.email);
+      }
       status.error(message);
     }
   };
@@ -107,6 +112,22 @@ export default function LoginPage() {
           </div>
 
           <StatusBanner status={status.status} />
+
+          {unverifiedEmail && (
+            <div className="rounded-xl border border-primary/20 bg-primary/10 p-3 text-center text-sm text-text-primary">
+              <p className="mb-1 text-text-secondary">Your account is not verified yet.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  sessionStorage.setItem("pending-verification-email", unverifiedEmail);
+                  router.push("/verify-email");
+                }}
+                className="font-medium text-gold hover:underline"
+              >
+                Click here to verify your email
+              </button>
+            </div>
+          )}
 
           <Button type="submit" className="mt-2 w-full" isLoading={isSubmitting} disabled={!isValid}>
             Log in

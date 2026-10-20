@@ -6,6 +6,7 @@ import {
   getCurrentUser,
   registerUser,
   verifyEmail,
+  resendVerificationCode,
   requestPasswordReset,
   resetPassword,
 } from "./auth.service";
@@ -33,6 +34,12 @@ export const verifyEmailHandler = asyncHandler(async (req: Request, res: Respons
   const { user, token } = await verifyEmail(email, code);
   setSessionCookie(res, token, false);
   sendSuccess(res, { user, token });
+});
+
+export const resendVerificationHandler = asyncHandler(async (req: Request, res: Response) => {
+  const { email } = req.body;
+  const result = await resendVerificationCode(email);
+  sendSuccess(res, result);
 });
 
 export const login = asyncHandler(async (req: Request, res: Response) => {

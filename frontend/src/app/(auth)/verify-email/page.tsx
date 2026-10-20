@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { StatusBanner } from "@/components/status/StatusBanner";
 import { useStatus } from "@/hooks/useStatus";
 import { verifyEmailSchema, VerifyEmailFormInput } from "@/lib/validators/register";
-import { verifyEmail } from "@/lib/endpoints";
+import { verifyEmail, resendVerificationCode } from "@/lib/endpoints";
 import { ApiError } from "@/lib/apiClient";
 import { useAuth } from "@/context/AuthContext";
 
@@ -21,6 +21,7 @@ export default function VerifyEmailPage() {
   const { setUser } = useAuth();
   const [email, setEmail] = useState<string | null>(null);
   const [fallbackCode, setFallbackCode] = useState<string | null>(null);
+  const [isResending, setIsResending] = useState(false);
 
   const {
     register,
@@ -43,6 +44,27 @@ export default function VerifyEmailPage() {
       setValue("code", storedCode, { shouldValidate: true });
     }
   }, [setValue]);
+
+  const handleResend = async () => {
+    if (!email) {
+      status.error("Email address is missing. Please go back to login.");
+      return;
+    }
+    setIsResending(true);
+    status.clear();
+    try {
+      const res = await resendVerificationCode(email);
+      if (res.verificationCode) {
+        setFallbackCode(res.verificationCode);
+        setValue("code", res.verificationCode, { shouldValidate: true });
+      }
+      status.success("A new verification code has been generated/sent.");
+    } catch (err) {
+      status.error(err instanceof ApiError ? err.message : "Failed to resend code.");
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   const onSubmit = async (values: VerifyEmailFormInput) => {
     status.clear();
@@ -86,6 +108,18 @@ export default function VerifyEmailPage() {
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+          {!email && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-text-secondary">Email address</label>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                onChange={(e) => setEmail(e.target.value)}
+                className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
+          )}
+
           <Input label="Verification code" error={errors.code?.message} {...register("code")} />
 
           <StatusBanner status={status.status} />
@@ -93,6 +127,18 @@ export default function VerifyEmailPage() {
           <Button type="submit" className="mt-2 w-full" isLoading={isSubmitting} disabled={!isValid}>
             Verify email
           </Button>
+
+          <div className="flex items-center justify-between text-xs text-text-muted mt-1">
+            <span>Didn&apos;t receive a code?</span>
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={isResending || !email}
+              className="text-primary hover:text-primary-hover font-medium disabled:opacity-50"
+            >
+              {isResending ? "Resending..." : "Resend code"}
+            </button>
+          </div>
         </form>
 
         <p className="mt-6 text-center text-sm text-text-muted">

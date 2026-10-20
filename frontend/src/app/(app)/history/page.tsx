@@ -11,23 +11,32 @@ import { fetchTradeHistory } from "@/lib/endpoints";
 import { formatCurrency } from "@/lib/currency";
 import { SimulatedTrade } from "@/types";
 
+const tradesCache: Record<string, SimulatedTrade[]> = {};
+
 export default function HistoryPage() {
   const { selectedAccount } = useAccount();
-  const [trades, setTrades] = useState<SimulatedTrade[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
   const accountId = selectedAccount?.id ?? null;
+  const [trades, setTrades] = useState<SimulatedTrade[]>(() => (accountId ? tradesCache[accountId] ?? [] : []));
+  const [isLoading, setIsLoading] = useState(() => !(accountId && tradesCache[accountId]));
 
   useEffect(() => {
     if (!accountId) return;
+    if (tradesCache[accountId]) {
+      setTrades(tradesCache[accountId]);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
     let cancelled = false;
-    setIsLoading(true);
     fetchTradeHistory(accountId, 200)
       .then((data) => {
-        if (!cancelled) setTrades(data);
+        if (!cancelled) {
+          tradesCache[accountId] = data;
+          setTrades(data);
+        }
       })
       .catch(() => {
-        if (!cancelled) setTrades([]);
+        if (!cancelled && !tradesCache[accountId]) setTrades([]);
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);

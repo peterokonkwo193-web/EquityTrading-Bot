@@ -1,6 +1,17 @@
 import { ApiFailure } from "@/types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
+function getApiUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host && host !== "localhost" && host !== "127.0.0.1") {
+      return "/api/v1";
+    }
+  }
+  return "http://localhost:4000/api/v1";
+}
 
 export class ApiError extends Error {
   status: number;
@@ -27,8 +38,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (options.body) headers["Content-Type"] = "application/json";
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
+  const baseUrl = getApiUrl();
+
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(`${baseUrl}${path}`, {
       method: options.method ?? "GET",
       credentials: "include",
       headers: Object.keys(headers).length ? headers : undefined,

@@ -4,7 +4,7 @@ export const FOREX_MARKETS = ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD"] 
 export const ALL_MARKETS = [...CRYPTO_MARKETS, ...FOREX_MARKETS];
 
 export const MIN_TRADE_AMOUNT = 100;
-export const TRADE_DURATION_SECONDS = 20;
+export const TRADE_DURATION_SECONDS = 10;
 
 export const WIN_PROBABILITY = 0.85;
 export const PROFIT_PCT_MIN = 0.01;
