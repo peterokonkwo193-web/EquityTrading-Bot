@@ -285,7 +285,7 @@ export default function TradingBotPage() {
 
     // Generate a loss amount between $0.50 and $1.00
     const lossAmount = Math.round((0.50 + Math.random() * 0.50) * 100) / 100;
-    const profitAmount = Math.round((1.55 + Math.random() * 0.45) * 100) / 100;
+    const profitAmount = Math.round((2.00 + Math.random() * 2.00) * 100) / 100;
     const finalProfitLoss = isWin ? profitAmount : -lossAmount;
 
     // Calculate returnPct based on finalProfitLoss and currentAmount
