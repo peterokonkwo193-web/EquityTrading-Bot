@@ -31,12 +31,24 @@
 
 html {
   color-scheme: dark;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   background: var(--color-background);
   color: var(--color-text-primary);
   position: relative;
+  touch-action: manipulation;
+}
+
+/* Prevent auto-zooming on focus in mobile browsers (iOS Safari zooms if input font-size < 16px) */
+@media screen and (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 body::before {

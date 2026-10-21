@@ -457,22 +457,15 @@ export default function TradingBotPage() {
   return (
     <div className="flex flex-col gap-2.5 max-w-7xl mx-auto w-full">
 
-      {/* Compact Page Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-2">
-        <div>
-          <h2 className="text-base font-bold text-text-primary leading-tight flex items-center gap-2">
-            <Rocket className="h-4 w-4 text-gold" />
-            Bot Trading Engine
-          </h2>
-          <p className="text-[11px] text-text-muted">
-            Low-risk algorithmic strategy prioritizing capital preservation and consistent returns
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white/5 border border-white/10 text-text-secondary">
-            Engine: <span className={isBotActive ? "text-emerald-400 font-semibold" : "text-text-muted"}>{isBotActive ? "Active" : "Idle"}</span>
-          </span>
-        </div>
+      {/* Page Header */}
+      <div className="border-b border-white/5 pb-2">
+        <h2 className="text-base font-bold text-text-primary leading-tight flex items-center gap-2">
+          <Rocket className="h-4 w-4 text-gold" />
+          Bot Trading Engine
+        </h2>
+        <p className="text-[11px] sm:text-xs text-text-muted mt-0.5">
+          The bot trades in a low-risk algorithmic strategy focused on prioritizing capital preservation and consistent returns over high-risk speculation.
+        </p>
       </div>
 
       {/* Startup Sequence Overlay when Initializing */}
