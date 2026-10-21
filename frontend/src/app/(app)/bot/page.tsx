@@ -577,50 +577,50 @@ export default function TradingBotPage() {
       {/* Running Engine View (Stats + Split Columns) */}
       {botStatus !== "Initializing" && isBotActive && activeMarket && (
         <div className="flex flex-col gap-2.5">
-          {/* Streamlined Compact Telemetry Stats Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
-            <Card className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl flex flex-col justify-center border border-white/10 min-h-[46px] sm:min-h-[50px]">
-              <span className="flex items-center gap-1 text-[10px] text-text-secondary truncate">
-                <WalletIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-gold shrink-0" />
+          {/* Streamlined Telemetry Stats Row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <Card className="p-2 sm:p-2.5 md:p-3 rounded-xl flex flex-col justify-center border border-white/10 min-h-[52px] sm:min-h-[56px]">
+              <span className="flex items-center gap-1.5 text-[11px] sm:text-xs text-text-secondary truncate">
+                <WalletIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gold shrink-0" />
                 Available Balance
               </span>
-              <span className="text-xs sm:text-sm md:text-base font-bold text-gold font-mono truncate leading-tight mt-0.5">
+              <span className="text-sm sm:text-base md:text-lg font-bold text-gold font-mono truncate leading-tight mt-0.5">
                 {formatCurrency(balance, currency)}
               </span>
             </Card>
 
-            <Card className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl flex flex-col justify-center border border-white/10 min-h-[46px] sm:min-h-[50px]">
-              <span className="flex items-center gap-1 text-[10px] text-text-secondary truncate">
-                <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" />
+            <Card className="p-2 sm:p-2.5 md:p-3 rounded-xl flex flex-col justify-center border border-white/10 min-h-[52px] sm:min-h-[56px]">
+              <span className="flex items-center gap-1.5 text-[11px] sm:text-xs text-text-secondary truncate">
+                <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                 Profit (PnL)
               </span>
-              <span className={`text-xs sm:text-sm md:text-base font-bold font-mono truncate leading-tight mt-0.5 ${sessionProfit >= 0 ? "text-green-400" : "text-rose-400"}`}>
+              <span className={`text-sm sm:text-base md:text-lg font-bold font-mono truncate leading-tight mt-0.5 ${sessionProfit >= 0 ? "text-green-400" : "text-rose-400"}`}>
                 {sessionProfit >= 0 ? "+" : ""}
                 {formatCurrency(sessionProfit, currency)}
               </span>
             </Card>
 
-            <Card className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl flex flex-col justify-center border border-white/10 min-h-[46px] sm:min-h-[50px]">
+            <Card className="p-2 sm:p-2.5 md:p-3 rounded-xl flex flex-col justify-center border border-white/10 min-h-[52px] sm:min-h-[56px]">
               <div className="flex items-center justify-between gap-1">
-                <span className="flex items-center gap-1 text-[10px] text-text-secondary truncate">
-                  <Activity className="h-2.5 w-2.5 sm:h-3 sm:w-3 shrink-0" />
+                <span className="flex items-center gap-1.5 text-[11px] sm:text-xs text-text-secondary truncate">
+                  <Activity className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                   Total Trades
                 </span>
-                <span className="text-[9px] font-mono text-text-muted shrink-0">
+                <span className="text-[10px] font-mono text-text-muted shrink-0">
                   <span className="text-green-400 font-semibold">{winningTrades}W</span> · <span className="text-rose-400 font-semibold">{losingTrades}L</span>
                 </span>
               </div>
-              <span className="text-xs sm:text-sm md:text-base font-bold text-text-primary font-mono leading-tight mt-0.5">
+              <span className="text-sm sm:text-base md:text-lg font-bold text-text-primary font-mono leading-tight mt-0.5">
                 {totalTrades}
               </span>
             </Card>
 
-            <Card className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl flex flex-col justify-center border border-white/10 min-h-[46px] sm:min-h-[50px]">
-              <span className="flex items-center gap-1 text-[10px] text-text-secondary truncate">
-                <Target className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary shrink-0" />
+            <Card className="p-2 sm:p-2.5 md:p-3 rounded-xl flex flex-col justify-center border border-white/10 min-h-[52px] sm:min-h-[56px]">
+              <span className="flex items-center gap-1.5 text-[11px] sm:text-xs text-text-secondary truncate">
+                <Target className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary shrink-0" />
                 Win Rate
               </span>
-              <span className="text-xs sm:text-sm md:text-base font-bold text-primary font-mono leading-tight mt-0.5">
+              <span className="text-sm sm:text-base md:text-lg font-bold text-primary font-mono leading-tight mt-0.5">
                 {totalTrades > 0 ? `${winRate.toFixed(1)}%` : "0.0%"}
               </span>
             </Card>
