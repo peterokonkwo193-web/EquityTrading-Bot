@@ -283,9 +283,13 @@ export default function TradingBotPage() {
     }
     const isWin = winLossSequence[(botStartIndexRef.current + trades.length) % winLossSequence.length];
 
-    // Generate a loss amount between $0.50 and $1.00
+    // Generate a loss amount between $0.50 and $1.00 (as requested, loss left as is)
     const lossAmount = Math.round((0.50 + Math.random() * 0.50) * 100) / 100;
-    const profitAmount = Math.round((2.00 + Math.random() * 2.00) * 100) / 100;
+    // Scale profit proportionally with starting trade amount ($100 -> $2-$4, $200 -> $4-$8, etc.)
+    const scale = currentAmount / 100;
+    const minProfit = 2.00 * scale;
+    const maxProfit = 4.00 * scale;
+    const profitAmount = Math.round((minProfit + Math.random() * (maxProfit - minProfit)) * 100) / 100;
     const finalProfitLoss = isWin ? profitAmount : -lossAmount;
 
     // Calculate returnPct based on finalProfitLoss and currentAmount
@@ -331,15 +335,8 @@ export default function TradingBotPage() {
 
     addLog(`Position closed. Return: ${finalProfitLoss >= 0 ? "+" : ""}${formatCurrency(finalProfitLoss, currency)} (${returnPct.toFixed(2)}%)`);
 
-    // Stop immediately once the position is settled, instead of waiting
-    // through the cooldown below before the queued stop gets picked up.
-    if (stopRequestedRef.current) {
-      stopRequestedRef.current = false;
-      setStopRequested(false);
-      isBotActiveRef.current = false;
-      setIsBotActive(false);
-      setBotStatus("Idle");
-      addLog("Bot stopped successfully. Returned to idle.");
+    // If bot was stopped during position settlement, exit immediately
+    if (!isBotActiveRef.current) {
       return;
     }
 
@@ -347,17 +344,11 @@ export default function TradingBotPage() {
     setBotStatus("Scanning");
     addLog("Searching for next high probability entry. Next trade in 10s...");
     for (let c = 10; c > 0; c--) {
-      if (!isBotActiveRef.current || stopRequestedRef.current) break;
+      if (!isBotActiveRef.current) break;
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
-    if (stopRequestedRef.current) {
-      stopRequestedRef.current = false;
-      setStopRequested(false);
-      isBotActiveRef.current = false;
-      setIsBotActive(false);
-      setBotStatus("Idle");
-      addLog("Bot stopped successfully. Returned to idle.");
+    if (!isBotActiveRef.current) {
       return;
     }
 
@@ -418,16 +409,13 @@ export default function TradingBotPage() {
   };
 
   const handleStop = () => {
-    if (currentTrade) {
-      stopRequestedRef.current = true;
-      setStopRequested(true);
-      addLog("Stop request queued. Bot will shut down once the current position is closed.");
-    } else {
-      isBotActiveRef.current = false;
-      setIsBotActive(false);
-      setBotStatus("Idle");
-      addLog("Bot stopped. Idle state.");
-    }
+    isBotActiveRef.current = false;
+    stopRequestedRef.current = false;
+    setIsBotActive(false);
+    setStopRequested(false);
+    setCurrentTrade(null);
+    setBotStatus("Idle");
+    addLog("Bot stopped. Returned to idle.");
   };
 
   // Clean values for stats
@@ -645,17 +633,10 @@ export default function TradingBotPage() {
               {/* Compact Status Card */}
               <Card className="p-3 border border-white/10 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  {stopRequested ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
-                      <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                      Stopping...
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full">
-                      <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-                      Bot Running
-                    </span>
-                  )}
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full">
+                    <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+                    Bot Running
+                  </span>
                   <span className="text-[11px] text-text-muted font-mono">
                     {activeMarket.toUpperCase()} · {formatCurrency(parseFloat(tradeAmount) || 0, currency)}
                   </span>
@@ -663,20 +644,16 @@ export default function TradingBotPage() {
 
                 {/* Status / Rotation Message */}
                 <p className="text-[11px] font-medium text-gold truncate py-0.5">
-                  {stopRequested
-                    ? "Finishing position, then stopping..."
-                    : rotationMsg || "Scanning market structure..."}
+                  {rotationMsg || "Scanning market structure..."}
                 </p>
 
                 <Button
                   variant="danger"
                   onClick={handleStop}
                   className="w-full h-8 text-xs font-semibold"
-                  disabled={stopRequested}
-                  isLoading={stopRequested}
                 >
                   <Square className="h-3 w-3" />
-                  {stopRequested ? "Stopping..." : "Stop Bot"}
+                  Stop Bot
                 </Button>
               </Card>
 
