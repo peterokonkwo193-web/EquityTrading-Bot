@@ -628,8 +628,8 @@ export default function TradingBotPage() {
 
           {/* Split Two-Column Layout (Fits on screen without scrolling) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-start">
-            {/* Left Column: Control Card + Active Trade Indicator */}
-            <div className="lg:col-span-5 flex flex-col gap-2">
+            {/* Left Column: Control Card */}
+            <div className="lg:col-span-4 flex flex-col gap-2">
               {/* Compact Status Card */}
               <Card className="p-3 border border-white/10 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
@@ -656,55 +656,10 @@ export default function TradingBotPage() {
                   Stop Bot
                 </Button>
               </Card>
-
-              {/* Compact Active Open Trade Indicator */}
-              {currentTrade && currentTrade.status === "OPEN" && (
-                <Card className="p-3 border border-gold/40 bg-gradient-to-br from-gold/[0.08] via-card to-card shadow-lg flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                          currentTrade.direction === "BUY"
-                            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                            : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
-                        }`}
-                      >
-                        {currentTrade.direction === "BUY" ? (
-                          <ArrowUpRight className="h-4 w-4 animate-pulse" />
-                        ) : (
-                          <ArrowDownRight className="h-4 w-4 animate-pulse" />
-                        )}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-text-primary text-xs">{currentTrade.pair}</span>
-                          <span
-                            className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded ${
-                              currentTrade.direction === "BUY"
-                                ? "bg-emerald-500/20 text-emerald-400"
-                                : "bg-rose-500/20 text-rose-400"
-                            }`}
-                          >
-                            {currentTrade.direction}
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-text-muted mt-0.5">
-                          {formatCurrency(currentTrade.amount, currency)} · Entry: {currentTrade.entryPrice.toFixed(4)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 border border-gold/30 text-[10px] font-mono font-semibold text-gold">
-                      <span className="h-1.5 w-1.5 rounded-full bg-gold animate-ping" />
-                      Executing
-                    </div>
-                  </div>
-                </Card>
-              )}
             </div>
 
             {/* Right Column: Live Trade Feed (Clean fixed-height scrollable list) */}
-            <div className="lg:col-span-7">
+            <div className="lg:col-span-8">
               <Card className="p-3 border border-white/10 flex flex-col h-[320px]">
                 <div className="flex items-center justify-between pb-2 mb-1.5 border-b border-white/5">
                   <div className="flex items-center gap-1.5">
