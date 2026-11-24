@@ -11,13 +11,13 @@ import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useStatus } from "@/hooks/useStatus";
 import {
-  Rocket, TrendingUp, Activity, Target, Wallet as WalletIcon,
+  TrendingUp, Activity, Target, Wallet as WalletIcon,
   Bitcoin, Landmark, ArrowUpRight, ArrowDownRight,
   AlertTriangle, StopCircle,
   Loader2, Check
 } from "lucide-react";
 
-// Startup steps for the progressive initialization sequence
+// Progressive initialization sequence
 const STARTUP_STEPS = [
   "Initializing Trading Engine...",
   "Loading Market Models...",
@@ -33,7 +33,7 @@ const STARTUP_STEPS = [
   "Trade Started Successfully"
 ];
 
-// Continuous rotated market status messages when bot is running
+// Continuous rotated market status messages
 const ANALYSIS_MESSAGES = [
   "Scanning BTCUSDT...",
   "Scanning ETHUSDT...",
@@ -345,9 +345,9 @@ export default function TradingBotPage() {
 
   if (isAccountLoading) {
     return (
-      <div className="flex flex-col gap-4 p-4">
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-48 w-full" />
+      <div className="flex flex-col gap-2.5 p-2 max-w-md mx-auto">
+        <Skeleton className="h-24 w-full rounded-2xl" />
+        <Skeleton className="h-40 w-full rounded-2xl" />
       </div>
     );
   }
@@ -358,300 +358,301 @@ export default function TradingBotPage() {
   const forexOpen = isForexMarketOpen();
 
   return (
-    <div className="flex flex-col gap-4 max-w-2xl mx-auto w-full px-2 pb-8">
+    <div className="flex flex-col gap-2.5 max-w-md mx-auto w-full px-1 sm:px-2 pb-6">
 
-      {/* ───────────── PAGE HEADER ───────────── */}
-      <Card className="p-5 border border-white/10 text-center">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Rocket className="h-5 w-5 text-gold" />
-          <h2 className="text-xl font-bold text-text-primary">Bot Trading Engine</h2>
-        </div>
-        <p className="text-sm text-text-secondary leading-relaxed max-w-sm mx-auto">
+      {/* ───────────── HEADER CARD (Matches screenshot exactly) ───────────── */}
+      <div className="rounded-2xl bg-[#111216] border border-white/[0.08] p-3.5 text-center shadow-sm">
+        <h2 className="text-sm sm:text-base font-bold text-white tracking-tight">Bot Trading Engine</h2>
+        <p className="text-[11px] sm:text-xs text-text-secondary leading-relaxed mt-1.5 max-w-[340px] mx-auto">
           The bot trades in a low risk strategy focused on prioritizing capital preservation and long term consistency over high risk speculation.
         </p>
-      </Card>
+      </div>
 
-      {/* ───────────── STARTUP OVERLAY ───────────── */}
+      {/* ───────────── STARTUP PROGRESS OVERLAY ───────────── */}
       {botStatus === "Initializing" && (
-        <Card className="p-8 border border-white/10 flex flex-col items-center justify-center text-center gap-5">
-          <div className="relative flex items-center justify-center h-20 w-20">
-            <Loader2 className="h-16 w-16 text-gold animate-spin shrink-0 absolute" />
-            <div className="text-gold font-bold text-sm">{Math.round((startupStep / STARTUP_STEPS.length) * 100)}%</div>
+        <div className="rounded-2xl bg-[#111216] border border-white/[0.08] p-5 flex flex-col items-center justify-center text-center gap-3">
+          <div className="relative flex items-center justify-center h-14 w-14">
+            <Loader2 className="h-12 w-12 text-gold animate-spin shrink-0 absolute" />
+            <div className="text-gold font-bold text-xs">{Math.round((startupStep / STARTUP_STEPS.length) * 100)}%</div>
           </div>
           <div className="flex flex-col gap-1 max-w-xs w-full">
-            <h3 className="font-bold text-text-primary text-base">Waking Up Trading Core</h3>
-            <p className="text-xs text-text-secondary">Loading market models & indicators...</p>
-            <div className="mt-3 flex flex-col gap-1 text-left bg-white/[0.02] border border-white/5 rounded-lg p-3 max-h-[120px] overflow-y-auto">
+            <h3 className="font-bold text-white text-xs sm:text-sm">Waking Up Trading Core</h3>
+            <p className="text-[11px] text-text-secondary">Loading market models & indicators...</p>
+            <div className="mt-2 flex flex-col gap-1 text-left bg-white/[0.02] border border-white/5 rounded-xl p-2.5 max-h-[100px] overflow-y-auto">
               {STARTUP_STEPS.slice(0, startupStep + 1).map((step, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-xs text-text-secondary">
-                  <Check className="h-3.5 w-3.5 text-green-400 shrink-0" />
+                <div key={idx} className="flex items-center gap-1.5 text-[11px] text-text-secondary">
+                  <Check className="h-3 w-3 text-emerald-400 shrink-0" />
                   <span className={idx === startupStep ? "text-gold font-medium animate-pulse" : "text-text-muted"}>{step}</span>
                 </div>
               ))}
             </div>
           </div>
-        </Card>
+        </div>
       )}
 
-      {/* ───────────── IDLE / SETUP VIEW ───────────── */}
+      {/* ───────────── IDLE / SETUP VIEW (Bold, high contrast, clean) ───────────── */}
       {botStatus !== "Initializing" && !isBotActive && (
-        <Card className="p-5 border border-white/10">
-          <div className="flex flex-col gap-5">
-
-            {/* Market Class Picker — large, bold, easy to read */}
-            <div>
-              <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest mb-3 text-center">Select Market</p>
-              <div className="grid grid-cols-2 gap-3">
-
-                {/* Crypto */}
-                <button
-                  onClick={() => setActiveMarket("crypto")}
-                  className={`flex flex-col items-center gap-3 p-5 border-2 rounded-2xl text-center transition-all ${
-                    activeMarket === "crypto"
-                      ? "border-gold bg-gold/[0.08] shadow-lg shadow-gold/10"
-                      : "border-white/15 bg-white/[0.02] hover:border-white/30 hover:bg-white/[0.04]"
-                  }`}
-                >
-                  <div className="h-14 w-14 rounded-2xl flex items-center justify-center bg-amber-500/20 text-amber-400">
-                    <Bitcoin className="h-8 w-8" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-text-primary text-lg leading-tight">Crypto</p>
-                    <p className="text-xs text-text-secondary mt-0.5">BTC · ETH · SOL</p>
-                  </div>
-                  {activeMarket === "crypto" && (
-                    <span className="text-[11px] font-semibold text-gold bg-gold/10 border border-gold/30 px-2.5 py-0.5 rounded-full">Selected</span>
-                  )}
-                </button>
-
-                {/* Forex */}
-                <button
-                  onClick={() => setActiveMarket("forex")}
-                  className={`relative flex flex-col items-center gap-3 p-5 border-2 rounded-2xl text-center transition-all ${
-                    activeMarket === "forex"
-                      ? "border-gold bg-gold/[0.08] shadow-lg shadow-gold/10"
-                      : "border-white/15 bg-white/[0.02] hover:border-white/30 hover:bg-white/[0.04]"
-                  }`}
-                >
-                  <span
-                    className={`absolute top-3 right-3 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                      forexOpen ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
-                    }`}
-                  >
-                    {forexOpen ? "Open" : "Closed"}
-                  </span>
-                  <div className="h-14 w-14 rounded-2xl flex items-center justify-center bg-blue-500/20 text-blue-400">
-                    <Landmark className="h-8 w-8" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-text-primary text-lg leading-tight">Forex</p>
-                    <p className="text-xs text-text-secondary mt-0.5">XAU · EUR · GBP</p>
-                  </div>
-                  {activeMarket === "forex" && (
-                    <span className="text-[11px] font-semibold text-gold bg-gold/10 border border-gold/30 px-2.5 py-0.5 rounded-full">Selected</span>
-                  )}
-                </button>
-              </div>
+        <div className="rounded-2xl bg-[#111216] border border-white/[0.08] p-3.5 flex flex-col gap-3 shadow-sm">
+          {/* Market Selection Grid */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Select Market Class</span>
+              <span className="text-[10px] text-text-muted">Tap to activate</span>
             </div>
+            <div className="grid grid-cols-2 gap-2">
+              {/* Crypto */}
+              <button
+                type="button"
+                onClick={() => setActiveMarket("crypto")}
+                className={`flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all ${
+                  activeMarket === "crypto"
+                    ? "border-gold bg-gold/[0.08] shadow-sm shadow-gold/10 ring-1 ring-gold/40"
+                    : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
+                }`}
+              >
+                <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-amber-500/15 text-amber-400 shrink-0">
+                  <Bitcoin className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-white text-xs leading-tight">Crypto</p>
+                  <p className="text-[10px] text-text-secondary truncate mt-0.5">BTC · ETH · SOL</p>
+                </div>
+              </button>
 
-            {/* Trade Amount */}
-            <div className="flex flex-col gap-2">
-              <div className="flex justify-between items-center">
-                <label className="text-xs font-bold text-text-secondary uppercase tracking-widest">
-                  Starting Amount ({currency})
-                </label>
-                <span className="text-xs text-text-muted font-mono">
-                  Available: <strong className="text-gold">{formatCurrency(balance, currency)}</strong>
+              {/* Forex */}
+              <button
+                type="button"
+                onClick={() => setActiveMarket("forex")}
+                className={`relative flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all ${
+                  activeMarket === "forex"
+                    ? "border-gold bg-gold/[0.08] shadow-sm shadow-gold/10 ring-1 ring-gold/40"
+                    : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
+                }`}
+              >
+                <span
+                  className={`absolute top-1.5 right-1.5 text-[9px] font-semibold px-1.5 py-0.2 rounded-full ${
+                    forexOpen ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
+                  }`}
+                >
+                  {forexOpen ? "Open" : "Closed"}
                 </span>
-              </div>
-              <Input
-                type="number"
-                min="100"
-                placeholder={`Min ${formatCurrency(100, currency)}`}
-                value={tradeAmount}
-                onChange={(e) => setTradeAmount(e.target.value)}
-                className="h-12 text-sm font-semibold"
-              />
-
-              {isBalanceInsufficient && (
-                <div className="text-xs text-rose-400 bg-rose-500/[0.05] border border-rose-500/20 p-3 rounded-xl flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 shrink-0" />
-                  <span>Insufficient balance. Minimum {formatCurrency(100, currency)} required.</span>
+                <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-blue-500/15 text-blue-400 shrink-0">
+                  <Landmark className="h-5 w-5" />
                 </div>
-              )}
-              {isLimitReached && (
-                <div className="text-xs text-rose-400 bg-rose-500/[0.05] border border-rose-500/20 p-3 rounded-xl flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 shrink-0" />
-                  <span>Account limit reached. Deposit to unlock higher trading limit.</span>
+                <div className="min-w-0">
+                  <p className="font-bold text-white text-xs leading-tight">Forex</p>
+                  <p className="text-[10px] text-text-secondary truncate mt-0.5">XAU · EUR · GBP</p>
                 </div>
-              )}
+              </button>
             </div>
-
-            <Button
-              disabled={!activeMarket || isBalanceInsufficient || isLimitReached || isNaN(amtNum) || amtNum < 100}
-              onClick={handleStartBot}
-              className="w-full h-12 text-sm font-bold"
-            >
-              <Rocket className="h-4 w-4" />
-              Start Bot
-            </Button>
           </div>
-        </Card>
+
+          {/* Trade Amount */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex justify-between items-center text-xs">
+              <label className="font-bold text-text-secondary uppercase tracking-wider text-[10px]">
+                Starting Amount ({currency})
+              </label>
+              <span className="text-[11px] text-text-muted font-mono">
+                Available: <strong className="text-gold">{formatCurrency(balance, currency)}</strong>
+              </span>
+            </div>
+            <Input
+              type="number"
+              min="100"
+              placeholder={`Min ${formatCurrency(100, currency)}`}
+              value={tradeAmount}
+              onChange={(e) => setTradeAmount(e.target.value)}
+              className="h-10 text-xs rounded-xl bg-white/[0.02] border-white/10 font-semibold"
+            />
+
+            {isBalanceInsufficient && (
+              <div className="text-[11px] text-rose-400 bg-rose-500/[0.05] border border-rose-500/20 p-2 rounded-xl flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                <span>Insufficient balance. Minimum {formatCurrency(100, currency)} required.</span>
+              </div>
+            )}
+            {isLimitReached && (
+              <div className="text-[11px] text-rose-400 bg-rose-500/[0.05] border border-rose-500/20 p-2 rounded-xl flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                <span>Account limit reached. Deposit to unlock higher trading limit.</span>
+              </div>
+            )}
+          </div>
+
+          {/* Start Bot Button */}
+          <Button
+            disabled={!activeMarket || isBalanceInsufficient || isLimitReached || isNaN(amtNum) || amtNum < 100}
+            onClick={handleStartBot}
+            className="w-full h-10 text-xs font-bold rounded-xl"
+          >
+            Start Bot
+          </Button>
+        </div>
       )}
 
-      {/* ───────────── RUNNING VIEW ───────────── */}
+      {/* ───────────── RUNNING VIEW (Matches screenshot sizes & layout) ───────────── */}
       {botStatus !== "Initializing" && isBotActive && activeMarket && (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2.5">
 
-          {/* 2×2 Stats Grid — matches screenshot exactly */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* 2×2 Stats Grid */}
+          <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
 
             {/* Available Balance */}
-            <Card className="p-4 border border-white/10 rounded-2xl flex flex-col gap-1.5">
-              <span className="flex items-center gap-1.5 text-xs text-text-secondary font-medium">
-                <WalletIcon className="h-3.5 w-3.5 text-gold shrink-0" />
-                Available Balance
-              </span>
-              <span className="text-2xl font-bold text-gold font-mono leading-tight">
+            <div className="rounded-2xl bg-[#111216] border border-white/[0.08] p-3 flex flex-col justify-between shadow-sm">
+              <div className="flex items-center gap-1.5 text-[11px] text-text-secondary">
+                <WalletIcon className="h-3.5 w-3.5 text-text-secondary shrink-0" />
+                <span className="truncate">Available Balance</span>
+              </div>
+              <div className="text-sm sm:text-base md:text-lg font-bold text-gold font-mono mt-1.5 truncate">
                 {formatCurrency(balance, currency)}
-              </span>
-            </Card>
+              </div>
+            </div>
 
             {/* Bot PnL */}
-            <Card className="p-4 border border-white/10 rounded-2xl flex flex-col gap-1.5">
-              <span className="flex items-center gap-1.5 text-xs text-text-secondary font-medium">
-                <TrendingUp className="h-3.5 w-3.5 shrink-0" />
-                Bot PnL ({activeMarket.toUpperCase()})
-              </span>
-              <span className={`text-2xl font-bold font-mono leading-tight ${sessionProfit >= 0 ? "text-green-400" : "text-rose-400"}`}>
+            <div className="rounded-2xl bg-[#111216] border border-white/[0.08] p-3 flex flex-col justify-between shadow-sm">
+              <div className="flex items-center gap-1.5 text-[11px] text-text-secondary">
+                <TrendingUp className="h-3.5 w-3.5 text-text-secondary shrink-0" />
+                <span className="truncate">Bot PnL ({activeMarket.toUpperCase()})</span>
+              </div>
+              <div className={`text-sm sm:text-base md:text-lg font-bold font-mono mt-1.5 truncate ${sessionProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                 {sessionProfit >= 0 ? "+" : ""}{formatCurrency(sessionProfit, currency)}
-              </span>
-            </Card>
+              </div>
+            </div>
 
             {/* Total Trades */}
-            <Card className="p-4 border border-white/10 rounded-2xl flex flex-col gap-1.5">
-              <span className="flex items-center gap-1.5 text-xs text-text-secondary font-medium">
-                <Activity className="h-3.5 w-3.5 shrink-0" />
-                Total Trades
-              </span>
-              <span className="text-2xl font-bold text-text-primary font-mono leading-tight">
-                {totalTrades}
-              </span>
-              <div className="flex items-center gap-3 mt-0.5">
-                <span className="flex items-center gap-1 text-xs font-semibold text-green-400">
-                  <TrendingUp className="h-3 w-3" />
-                  Wins: {winningTrades}
-                </span>
-                <span className="flex items-center gap-1 text-xs font-semibold text-rose-400">
-                  <ArrowDownRight className="h-3 w-3" />
-                  Losses: {losingTrades}
-                </span>
+            <div className="rounded-2xl bg-[#111216] border border-white/[0.08] p-3 flex flex-col justify-between shadow-sm">
+              <div className="flex items-center gap-1.5 text-[11px] text-text-secondary">
+                <Activity className="h-3.5 w-3.5 text-text-secondary shrink-0" />
+                <span className="truncate">Total Trades</span>
               </div>
-            </Card>
+              <div className="text-sm sm:text-base md:text-lg font-bold text-white font-mono mt-1 truncate">
+                {totalTrades}
+              </div>
+              <div className="flex items-center gap-3 mt-1.5">
+                <div className="flex items-start gap-1">
+                  <ArrowUpRight className="h-3 w-3 text-emerald-400 mt-0.5 shrink-0" />
+                  <div className="text-[10px] leading-tight text-emerald-400">
+                    <div>Wins:</div>
+                    <div className="font-semibold">{winningTrades}</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-1">
+                  <ArrowDownRight className="h-3 w-3 text-rose-400 mt-0.5 shrink-0" />
+                  <div className="text-[10px] leading-tight text-rose-400">
+                    <div>Losses:</div>
+                    <div className="font-semibold">{losingTrades}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Win Rate */}
-            <Card className="p-4 border border-white/10 rounded-2xl flex flex-col gap-1.5">
-              <span className="flex items-center gap-1.5 text-xs text-text-secondary font-medium">
-                <Target className="h-3.5 w-3.5 shrink-0" />
-                Win Rate
-              </span>
-              <span className="text-2xl font-bold text-primary font-mono leading-tight">
+            <div className="rounded-2xl bg-[#111216] border border-white/[0.08] p-3 flex flex-col justify-between shadow-sm">
+              <div className="flex items-center gap-1.5 text-[11px] text-text-secondary">
+                <Target className="h-3.5 w-3.5 text-text-secondary shrink-0" />
+                <span className="truncate">Win Rate</span>
+              </div>
+              <div className="text-sm sm:text-base md:text-lg font-bold text-[#3b82f6] font-mono mt-1.5 truncate">
                 {totalTrades > 0 ? `${winRate.toFixed(1)}%` : "0.0%"}
-              </span>
-            </Card>
+              </div>
+            </div>
           </div>
 
-          {/* Bot Status Card — centered, matches screenshot */}
-          <Card className="p-6 border border-white/10 rounded-2xl flex flex-col items-center gap-4 text-center">
+          {/* Bot Status Card (Centered, rounded-2xl, matches screenshot) */}
+          <div className="rounded-2xl bg-[#111216] border border-white/[0.08] p-3.5 sm:p-4 flex flex-col items-center justify-center text-center gap-1.5 shadow-sm">
             {/* Green "Bot Running" pill */}
-            <span className="inline-flex items-center gap-2 text-sm font-semibold text-green-400 bg-green-500/15 border border-green-500/25 px-4 py-1.5 rounded-full">
-              <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-              Bot Running
-            </span>
-
-            {/* Market + amount */}
-            <div>
-              <p className="text-base font-bold text-text-primary">
-                Trading {activeMarket.toUpperCase()} · {formatCurrency(parseFloat(tradeAmount) || 0, currency)}/trade
-              </p>
-              {/* Rotation status message in gold */}
-              <p className="text-sm font-semibold text-gold mt-1 min-h-[20px]">
-                {rotationMsg || "Liquidity Zone Found"}
-              </p>
+            <div className="inline-flex items-center gap-1.5 bg-[#0e2a1d] border border-[#164e32] text-emerald-400 text-[11px] font-medium px-3 py-0.5 rounded-full">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              <span>Bot Running</span>
             </div>
 
-            {/* Stop Bot button — red, wide */}
+            {/* Trading Pair + Amount */}
+            <p className="text-xs sm:text-[13px] font-semibold text-white mt-1">
+              Trading {activeMarket.toUpperCase()} · {formatCurrency(parseFloat(tradeAmount) || 0, currency)}/trade
+            </p>
+
+            {/* Dynamic Gold Status Text */}
+            <p className="text-[11px] sm:text-xs font-medium text-gold min-h-[16px]">
+              {rotationMsg || "Liquidity Zone Found"}
+            </p>
+
+            {/* Stop Bot Button */}
             <button
+              type="button"
               onClick={handleStop}
-              className="flex items-center justify-center gap-2.5 w-full max-w-xs h-12 rounded-full bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-bold text-sm transition-all shadow-lg shadow-rose-500/20"
+              className="mt-1 inline-flex items-center justify-center gap-1.5 bg-[#ea2b3e] hover:bg-rose-600 active:bg-rose-700 text-white font-semibold text-xs py-1.5 px-4 rounded-xl transition-all shadow-md shadow-rose-900/30"
             >
-              <StopCircle className="h-5 w-5" />
-              Stop Bot
+              <StopCircle className="h-3.5 w-3.5" />
+              <span>Stop Bot</span>
             </button>
-          </Card>
+          </div>
 
-          {/* Live Trade Feed */}
-          <Card className="p-4 border border-white/10 rounded-2xl flex flex-col gap-3">
+          {/* Live Trade Feed Card */}
+          <div className="rounded-2xl bg-[#111216] border border-white/[0.08] p-3 sm:p-3.5 flex flex-col gap-2 shadow-sm">
             <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-green-400 animate-pulse" />
-              <h3 className="font-bold text-text-primary text-sm">Live Trade Feed</h3>
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              <h3 className="font-bold text-white text-xs">Live Trade Feed</h3>
             </div>
 
-            {/* Open / in-progress trade */}
+            {/* Active Running Trade */}
             {currentTrade && (
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-gold/20 bg-gold/[0.03] px-3 py-3">
-                <div className="flex items-center gap-3">
-                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
-                    currentTrade.direction === "BUY" ? "bg-green-500/20 text-green-400" : "bg-rose-500/20 text-rose-400"
+              <div className="flex items-center justify-between gap-2.5 rounded-xl border border-gold/20 bg-gold/[0.03] p-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    currentTrade.direction === "BUY" ? "bg-emerald-950/50 text-emerald-400 border border-emerald-900/40" : "bg-rose-950/50 text-rose-400 border border-rose-900/40"
                   }`}>
-                    {currentTrade.direction === "BUY" ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
+                    {currentTrade.direction === "BUY" ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
                   </div>
                   <div>
-                    <p className="font-bold text-text-primary text-sm">{currentTrade.pair}</p>
-                    <p className={`text-xs font-semibold ${currentTrade.direction === "BUY" ? "text-green-400" : "text-rose-400"}`}>
+                    <p className="font-bold text-white text-xs leading-tight">{currentTrade.pair}</p>
+                    <p className={`text-[10px] font-bold ${currentTrade.direction === "BUY" ? "text-emerald-400" : "text-rose-400"}`}>
                       {currentTrade.direction}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-gold font-semibold animate-pulse">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Running...
+                <div className="flex items-center gap-1.5 text-[11px] text-gold font-semibold animate-pulse">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>Executing...</span>
                 </div>
               </div>
             )}
 
+            {/* Completed Trade Feed */}
             {trades.length === 0 && !currentTrade ? (
-              <div className="py-8 text-center">
-                <p className="text-sm text-text-muted">No trades executed yet. Completed positions will appear here.</p>
+              <div className="py-4 text-center">
+                <p className="text-[11px] text-text-muted">No trades executed yet. Completed positions will appear here.</p>
               </div>
             ) : (
-              <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto">
+              <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto pr-0.5">
                 {trades.map((t) => (
                   <div
                     key={t.id}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.015] px-3 py-3 hover:bg-white/[0.03] transition-colors"
+                    className="flex items-center justify-between gap-2.5 rounded-xl border border-white/5 bg-[#15161b] p-2.5 hover:bg-[#1a1b22] transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
-                        t.direction === "BUY" ? "bg-green-500/20 text-green-400" : "bg-rose-500/20 text-rose-400"
+                    <div className="flex items-center gap-2.5">
+                      <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${
+                        t.direction === "BUY"
+                          ? "bg-emerald-950/40 text-emerald-400 border border-emerald-900/30"
+                          : "bg-rose-950/40 text-rose-400 border border-rose-900/30"
                       }`}>
-                        {t.direction === "BUY" ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
+                        {t.direction === "BUY" ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
                       </div>
                       <div>
-                        <p className="font-bold text-text-primary text-sm">{t.pair}</p>
-                        <p className={`text-xs font-semibold ${t.direction === "BUY" ? "text-green-400" : "text-rose-400"}`}>
+                        <p className="font-bold text-white text-xs leading-tight">{t.pair}</p>
+                        <p className={`text-[10px] font-bold ${t.direction === "BUY" ? "text-emerald-400" : "text-rose-400"}`}>
                           {t.direction}
                         </p>
                       </div>
                     </div>
-                    <span className={`font-bold font-mono text-sm ${t.profitLoss >= 0 ? "text-green-400" : "text-rose-400"}`}>
+                    <span className={`font-bold font-mono text-xs ${t.profitLoss >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                       {t.profitLoss >= 0 ? "+" : ""}{formatCurrency(t.profitLoss, currency)}
                     </span>
                   </div>
                 ))}
               </div>
             )}
-          </Card>
+          </div>
         </div>
       )}
 
