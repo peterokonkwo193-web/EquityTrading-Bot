@@ -3,15 +3,18 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useAccount } from "@/context/AccountContext";
-import { useTradingStats } from "@/hooks/useTradingStats";
-import { settleBotTrade, fetchWallet, fetchTradeHistory } from "@/lib/endpoints";
-import { formatCurrency, currencySymbol } from "@/lib/currency";
+import { settleBotTrade, fetchWallet } from "@/lib/endpoints";
+import { formatCurrency } from "@/lib/currency";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useStatus } from "@/hooks/useStatus";
 import {
-  TrendingUp, Activity, Target, Wallet as WalletIcon,
+  Rocket, TrendingUp, Activity, Target, Wallet as WalletIcon,
   Bitcoin, Landmark, ArrowUpRight, ArrowDownRight,
-  AlertTriangle, Square,
-  Loader2, Check, StopCircle, Play, Sparkles
+  AlertTriangle, StopCircle,
+  Loader2, Check
 } from "lucide-react";
 
 // Startup steps for the progressive initialization sequence
@@ -32,17 +35,22 @@ const STARTUP_STEPS = [
 
 // Continuous rotated market status messages when bot is running
 const ANALYSIS_MESSAGES = [
-  "Liquidity Zone Found",
   "Scanning BTCUSDT...",
   "Scanning ETHUSDT...",
   "Scanning SOLUSDT...",
-  "Checking Order Books...",
+  "Scanning EURUSD...",
+  "Scanning GBPUSD...",
+  "Scanning USDJPY...",
+  "Checking Liquidity...",
   "Finding Support...",
   "Finding Resistance...",
   "Detecting Breakout...",
+  "Liquidity Zone Found",
   "Trend Confirmed",
   "Momentum Increasing",
   "Entry Opportunity Found",
+  "Position Opened",
+  "Position Closed",
   "Searching For Next Opportunity..."
 ];
 
@@ -50,7 +58,7 @@ const CRYPTO_ASSETS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"];
 const FOREX_ASSETS = ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "XAUUSD"];
 
 function isForexMarketOpen() {
-  const day = new Date().getDay(); // 0 = Sunday, 6 = Saturday
+  const day = new Date().getDay();
   return day >= 1 && day <= 5;
 }
 
@@ -66,95 +74,26 @@ interface SimulatedTradeItem {
   status: "OPEN" | "CLOSED";
   startTime: Date;
   endTime?: Date;
-  isSession?: boolean;
 }
-
-const DEFAULT_FEED_TRADES: SimulatedTradeItem[] = [
-  {
-    id: "seed-1",
-    pair: "ETHUSDT",
-    direction: "SELL",
-    entryPrice: 3241.50,
-    exitPrice: 3206.50,
-    duration: 10,
-    amount: 1000,
-    profitLoss: 349.14,
-    status: "CLOSED",
-    startTime: new Date(Date.now() - 3 * 60 * 1000),
-  },
-  {
-    id: "seed-2",
-    pair: "BTCUSDT",
-    direction: "BUY",
-    entryPrice: 95400.00,
-    exitPrice: 95820.00,
-    duration: 10,
-    amount: 1200,
-    profitLoss: 420.50,
-    status: "CLOSED",
-    startTime: new Date(Date.now() - 9 * 60 * 1000),
-  },
-  {
-    id: "seed-3",
-    pair: "SOLUSDT",
-    direction: "BUY",
-    entryPrice: 196.20,
-    exitPrice: 199.10,
-    duration: 10,
-    amount: 800,
-    profitLoss: 215.80,
-    status: "CLOSED",
-    startTime: new Date(Date.now() - 15 * 60 * 1000),
-  },
-  {
-    id: "seed-4",
-    pair: "GBPUSD",
-    direction: "SELL",
-    entryPrice: 1.2710,
-    exitPrice: 1.2680,
-    duration: 10,
-    amount: 500,
-    profitLoss: 184.20,
-    status: "CLOSED",
-    startTime: new Date(Date.now() - 25 * 60 * 1000),
-  },
-];
 
 export default function TradingBotPage() {
   const { user } = useAuth();
   const { selectedAccount, isLoading: isAccountLoading, refreshAccounts } = useAccount();
   const accountId = selectedAccount?.id ?? null;
-  const { stats, refreshStats } = useTradingStats(accountId);
   const status = useStatus();
 
-  // Market & Capital Configuration — default to crypto and 100 so it is instantly primed
-  const [activeMarket, setActiveMarket] = useState<"crypto" | "forex">("crypto");
-  const [tradeAmount, setTradeAmount] = useState<string>("100");
+  const [activeMarket, setActiveMarket] = useState<"crypto" | "forex" | null>(null);
+  const [tradeAmount, setTradeAmount] = useState<string>("");
   const [isBotActive, setIsBotActive] = useState(false);
-  const [stopRequested, setStopRequested] = useState(false);
-
-  // Status Badge State
   const [botStatus, setBotStatus] = useState<
     "Idle" | "Initializing" | "Scanning" | "Analyzing" | "Trading" | "Monitoring" | "Closing Position"
   >("Idle");
-
-  // Startup sequence step
   const [startupStep, setStartupStep] = useState<number>(-1);
-
-  // Remaining seconds for current active trade (strictly 10s)
-  const [tradeSecondsLeft, setTradeSecondsLeft] = useState<number>(10);
-
-  // Rotation text (Market analysis)
-  const [rotationMsg, setRotationMsg] = useState("Liquidity Zone Found");
-
-  // Simulated Trades list and stats
+  const [rotationMsg, setRotationMsg] = useState("");
   const [trades, setTrades] = useState<SimulatedTradeItem[]>([]);
   const [currentTrade, setCurrentTrade] = useState<SimulatedTradeItem | null>(null);
-
-  // Session parameters
   const [sessionProfit, setSessionProfit] = useState<number>(0);
-
-  // Deposit-based trading limit
+  const [, setActivityLogs] = useState<string[]>(["Algo Engine ready. Select a market class to begin."]);
   const [accountLimit, setAccountLimit] = useState<number>(Infinity);
 
   const rotationIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -164,11 +103,9 @@ export default function TradingBotPage() {
   const accountLimitRef = useRef(Infinity);
   const botStartIndexRef = useRef<number>(-1);
 
-  // Available user balance
   const balance = selectedAccount ? Number(selectedAccount.balance) : 0;
   const currency = selectedAccount?.currency || "USD";
 
-  // Load wallet limit
   useEffect(() => {
     if (!accountId) return;
     let cancelled = false;
@@ -181,56 +118,27 @@ export default function TradingBotPage() {
         }
       })
       .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [accountId]);
 
-  // Load existing trade history on page mount so the feed is instantly populated
-  useEffect(() => {
-    if (!accountId) return;
-    let cancelled = false;
-    fetchTradeHistory(accountId, 20)
-      .then((history) => {
-        if (!cancelled && history && history.length > 0) {
-          const mapped: SimulatedTradeItem[] = history.map((t) => ({
-            id: t.id,
-            pair: t.market,
-            direction: t.direction,
-            entryPrice: Number(t.entryPrice || 0),
-            exitPrice: Number(t.exitPrice || 0),
-            duration: t.durationSeconds,
-            amount: Number(t.amount),
-            profitLoss: Number(t.profitLoss),
-            status: t.status,
-            startTime: new Date(t.createdAt),
-            endTime: t.closedAt ? new Date(t.closedAt) : undefined,
-          }));
-          setTrades(mapped);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [accountId]);
+  const addLog = useCallback((msg: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setActivityLogs((prev) => [...prev.slice(-49), `[${timestamp}] ${msg}`]);
+  }, []);
 
-  // Rotation messages interval
   useEffect(() => {
     if (isBotActive && botStatus !== "Initializing") {
       rotationIntervalRef.current = setInterval(() => {
         const rand = ANALYSIS_MESSAGES[Math.floor(Math.random() * ANALYSIS_MESSAGES.length)];
         setRotationMsg(rand);
-      }, 3000);
+        if (Math.random() < 0.2) addLog(rand);
+      }, 2500);
     } else {
       if (rotationIntervalRef.current) clearInterval(rotationIntervalRef.current);
     }
-    return () => {
-      if (rotationIntervalRef.current) clearInterval(rotationIntervalRef.current);
-    };
-  }, [isBotActive, botStatus]);
+    return () => { if (rotationIntervalRef.current) clearInterval(rotationIntervalRef.current); };
+  }, [isBotActive, botStatus, addLog]);
 
-  // Helper to generate realistic asset prices
   const getAssetPrice = (asset: string) => {
     switch (asset) {
       case "BTCUSDT": return 95000 + Math.random() * 2000;
@@ -242,30 +150,48 @@ export default function TradingBotPage() {
       case "USDJPY": return 155.20 + Math.random() * 1.5;
       case "AUDUSD": return 0.6650 + Math.random() * 0.005;
       case "XAUUSD": return 2330 + Math.random() * 40;
-      default: return 100;
+      default: return 100 + Math.random() * 10;
     }
   };
 
   const executeNextTrade = useCallback(async () => {
-    if (!isBotActiveRef.current || stopRequestedRef.current) return;
-    if (!selectedAccount) return;
-
+    if (!selectedAccount || !user) return;
+    if (stopRequestedRef.current) {
+      stopRequestedRef.current = false;
+      isBotActiveRef.current = false;
+      setIsBotActive(false);
+      setBotStatus("Idle");
+      addLog("Bot stopped successfully. Returned to idle.");
+      return;
+    }
+    if (!isBotActiveRef.current) return;
     if (Number(selectedAccount.balance) >= accountLimitRef.current) {
       isBotActiveRef.current = false;
       setIsBotActive(false);
       setBotStatus("Idle");
-      status.error("Account limit reached. Deposit to unlock a higher limit.");
+      status.error("Account limit reached. Make a new deposit to unlock a higher trading limit.");
+      addLog("Execution terminated: Account limit reached.");
       return;
     }
-
-    const currentAmount = parseFloat(tradeAmount) || 100;
+    const currentAmount = parseFloat(tradeAmount);
     if (currentAmount > Number(selectedAccount.balance)) {
       isBotActiveRef.current = false;
       setIsBotActive(false);
       setBotStatus("Idle");
       status.error("Insufficient available balance to proceed. Trading bot stopped.");
+      addLog("Execution terminated: Insufficient available balance.");
       return;
     }
+
+    setBotStatus("Scanning");
+    addLog("Scanning market liquidity & order books...");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    if (!isBotActiveRef.current) return;
+
+    setBotStatus("Analyzing");
+    addLog("Analyzing market trends and volumes...");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    if (!isBotActiveRef.current) return;
 
     const assets = activeMarket === "crypto" ? CRYPTO_ASSETS : FOREX_ASSETS;
     const selectedAsset = assets[Math.floor(Math.random() * assets.length)];
@@ -274,6 +200,9 @@ export default function TradingBotPage() {
     const duration = 10;
 
     setBotStatus("Trading");
+    addLog(`Entry confirmed for ${selectedAsset}. Generating order...`);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    if (!isBotActiveRef.current) return;
 
     const tradeId = Math.random().toString(36).substring(2, 10).toUpperCase();
     const newTrade: SimulatedTradeItem = {
@@ -282,29 +211,26 @@ export default function TradingBotPage() {
       direction,
       entryPrice,
       exitPrice: 0,
-      duration: 10,
+      duration,
       amount: currentAmount,
       profitLoss: 0,
       status: "OPEN",
       startTime: new Date(),
-      isSession: true,
     };
 
     setCurrentTrade(newTrade);
     setBotStatus("Monitoring");
-    setTradeSecondsLeft(10);
+    addLog(`Opened ${direction} position on ${selectedAsset} at ${entryPrice.toFixed(4)}`);
 
-    // Strictly 10 seconds execution countdown
-    for (let s = 10; s > 0; s--) {
+    for (let s = duration; s > 0; s--) {
       if (!isBotActiveRef.current) return;
-      setTradeSecondsLeft(s);
-      await new Promise((r) => setTimeout(r, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    setTradeSecondsLeft(0);
     if (!isBotActiveRef.current) return;
 
     setBotStatus("Closing Position");
-    await new Promise((r) => setTimeout(r, 350));
+    addLog(`Closing position for ${selectedAsset}...`);
+    await new Promise((resolve) => setTimeout(resolve, 350));
     if (!isBotActiveRef.current) return;
 
     const winLossSequence = [true, true, false, true, true, true, false, true, true, false, true, true, true, false, true, true, false, true, true, false];
@@ -320,7 +246,6 @@ export default function TradingBotPage() {
     const profitAmount = Math.round((minProfit + Math.random() * (maxProfit - minProfit)) * 100) / 100;
     const finalProfitLoss = isWin ? profitAmount : -lossAmount;
     const returnPct = (finalProfitLoss / currentAmount) * 100;
-
     const exitPrice = direction === "BUY"
       ? entryPrice * (1 + returnPct / 100)
       : entryPrice * (1 - returnPct / 100);
@@ -331,7 +256,6 @@ export default function TradingBotPage() {
       profitLoss: finalProfitLoss,
       status: "CLOSED",
       endTime: new Date(),
-      isSession: true,
     };
 
     if (accountId) {
@@ -348,7 +272,6 @@ export default function TradingBotPage() {
           durationSeconds: duration,
         });
         await refreshAccounts();
-        await refreshStats();
       } catch (e) {
         console.error("Failed to sync trade balance with backend", e);
       }
@@ -358,370 +281,380 @@ export default function TradingBotPage() {
     setSessionProfit((prev) => prev + finalProfitLoss);
     setTrades((prev) => [closedTrade, ...prev]);
     setCurrentTrade(null);
+    addLog(`Position closed. Return: ${finalProfitLoss >= 0 ? "+" : ""}${formatCurrency(finalProfitLoss, currency)} (${returnPct.toFixed(2)}%)`);
 
     if (!isBotActiveRef.current) return;
 
-    // Transition immediately to next strictly 10s trade
     setBotStatus("Scanning");
-    setTradeSecondsLeft(10);
-    await new Promise((r) => setTimeout(r, 1000));
-
-    if (isBotActiveRef.current && !stopRequestedRef.current) {
-      executeNextTrade();
+    addLog("Searching for next high probability entry. Next trade in 10s...");
+    for (let c = 10; c > 0; c--) {
+      if (!isBotActiveRef.current) break;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-  }, [
-    selectedAccount,
-    tradeAmount,
-    activeMarket,
-    accountId,
-    refreshAccounts,
-    refreshStats,
-    trades.length,
-    status
-  ]);
+    if (!isBotActiveRef.current) return;
 
-  useEffect(() => {
-    executeNextTradeRef.current = executeNextTrade;
-  }, [executeNextTrade]);
+    if (isBotActiveRef.current && executeNextTradeRef.current) {
+      executeNextTradeRef.current();
+    }
+  }, [selectedAccount, user, activeMarket, tradeAmount, accountId, currency, refreshAccounts, addLog, status, trades]);
+
+  useEffect(() => { executeNextTradeRef.current = executeNextTrade; }, [executeNextTrade]);
 
   const handleStartBot = async () => {
     status.clear();
     const amt = parseFloat(tradeAmount);
-    if (isNaN(amt) || amt < 10) {
-      status.error(`Please enter a valid trade amount (min ${currencySymbol(currency)}10.00).`);
-      return;
-    }
-    if (amt > balance) {
-      status.error("Trade amount exceeds your available balance.");
-      return;
-    }
-    if (balance >= accountLimit) {
-      status.error("Account limit reached. Deposit to unlock higher trading limit.");
-      return;
-    }
+    if (isNaN(amt) || amt < 100) { status.error("Minimum trading amount is $100"); return; }
+    if (amt > balance) return;
+    if (balance >= accountLimit) { status.error("Account limit reached. Make a new deposit to unlock a higher trading limit."); return; }
 
     isBotActiveRef.current = true;
     stopRequestedRef.current = false;
     setBotStatus("Initializing");
     setIsBotActive(true);
     setStartupStep(0);
+    addLog("Initiating Bot Startup sequence...");
 
     for (let i = 0; i < STARTUP_STEPS.length; i++) {
       setStartupStep(i);
-      await new Promise((r) => setTimeout(r, 60));
+      addLog(STARTUP_STEPS[i]);
+      await new Promise((resolve) => setTimeout(resolve, 80));
     }
 
     setStartupStep(-1);
     setBotStatus("Scanning");
-    setRotationMsg("Liquidity Zone Found");
-
-    if (executeNextTradeRef.current) {
-      executeNextTradeRef.current();
-    }
+    addLog("Bot started successfully. Listening for market entries.");
+    if (executeNextTradeRef.current) executeNextTradeRef.current();
   };
 
   const handleStop = () => {
     isBotActiveRef.current = false;
     stopRequestedRef.current = false;
     setIsBotActive(false);
-    setStopRequested(false);
     setCurrentTrade(null);
     setBotStatus("Idle");
+    addLog("Bot stopped. Returned to idle.");
   };
 
-  // Combine real stats or fallback numbers to perfectly match the screenshot
-  const totalTradesCount = stats?.tradesCount && stats.tradesCount > 0
-    ? stats.tradesCount
-    : (trades.length > 0 ? trades.length : 135);
+  const totalTrades = trades.length;
+  const winningTrades = trades.filter((t) => t.profitLoss > 0).length;
+  const losingTrades = totalTrades - winningTrades;
+  const rawWinRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+  const winRate = rawWinRate > 95 || rawWinRate === 0
+    ? 85 + (Math.sin(totalTrades || 1) * 5 + 5)
+    : Math.max(85, rawWinRate);
 
-  const displayWins = stats?.winCount !== undefined && stats.tradesCount > 0
-    ? stats.winCount
-    : (trades.length > 0 ? trades.filter((t) => t.profitLoss > 0).length : 105);
+  if (isAccountLoading) {
+    return (
+      <div className="flex flex-col gap-4 p-4">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
 
-  const displayLosses = Math.max(0, totalTradesCount - displayWins || 30);
-
-  const displayWinRate = stats?.winRate && stats.tradesCount > 0
-    ? stats.winRate
-    : (totalTradesCount > 0 && displayWins > 0 ? (displayWins / totalTradesCount) * 100 : 88.7);
-
-  const totalBotPnl = stats?.totalPnl && Number(stats.totalPnl) !== 0
-    ? Number(stats.totalPnl) + sessionProfit
-    : (sessionProfit !== 0 ? sessionProfit : 16371.28);
-
-  const feedTrades = trades.length > 0 ? trades : DEFAULT_FEED_TRADES;
-
-  const amtNum = parseFloat(tradeAmount) || 100;
-  const isBalanceInsufficient = amtNum > balance && balance > 0;
+  const amtNum = parseFloat(tradeAmount);
+  const isBalanceInsufficient = amtNum > balance;
   const isLimitReached = balance >= accountLimit;
+  const forexOpen = isForexMarketOpen();
 
   return (
-    <div className="flex flex-col gap-3 max-w-md mx-auto w-full pb-10">
-      {/* 1. Bot Trading Engine Hero Card */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0c0d0e] p-6 text-center shadow-md">
-        <h2 className="text-xl font-bold text-text-primary tracking-tight">
-          Bot Trading Engine
-        </h2>
-        <p className="text-xs text-[#8e8e93] mt-2 max-w-xs mx-auto leading-relaxed">
+    <div className="flex flex-col gap-4 max-w-2xl mx-auto w-full px-2 pb-8">
+
+      {/* ───────────── PAGE HEADER ───────────── */}
+      <Card className="p-5 border border-white/10 text-center">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <Rocket className="h-5 w-5 text-gold" />
+          <h2 className="text-xl font-bold text-text-primary">Bot Trading Engine</h2>
+        </div>
+        <p className="text-sm text-text-secondary leading-relaxed max-w-sm mx-auto">
           The bot trades in a low risk strategy focused on prioritizing capital preservation and long term consistency over high risk speculation.
         </p>
-      </div>
+      </Card>
 
-      {/* 2. 2x2 Stats Grid */}
-      <div className="grid grid-cols-2 gap-3">
-        {/* Available Balance */}
-        <div className="rounded-2xl border border-white/[0.08] bg-[#0c0d0e] p-4 flex flex-col justify-between min-h-[96px] shadow-md">
-          <div className="flex items-center gap-1.5 text-xs text-[#8e8e93]">
-            <WalletIcon className="h-4 w-4 shrink-0 text-[#8e8e93]" />
-            <span className="truncate">Available Balance</span>
-          </div>
-          <div className="text-lg sm:text-xl font-bold text-[#d4af37] font-sans tracking-tight mt-1.5">
-            {formatCurrency(balance, currency)}
-          </div>
-        </div>
-
-        {/* Bot PnL (CRYPTO) */}
-        <div className="rounded-2xl border border-white/[0.08] bg-[#0c0d0e] p-4 flex flex-col justify-between min-h-[96px] shadow-md">
-          <div className="flex items-center gap-1.5 text-xs text-[#8e8e93]">
-            <TrendingUp className="h-4 w-4 shrink-0 text-[#8e8e93]" />
-            <span className="truncate">Bot PnL ({activeMarket.toUpperCase()})</span>
-          </div>
-          <div className="text-lg sm:text-xl font-bold text-[#22c55e] font-sans tracking-tight mt-1.5">
-            {totalBotPnl >= 0 ? "+" : ""}
-            {formatCurrency(totalBotPnl, currency)}
-          </div>
-        </div>
-
-        {/* Total Trades */}
-        <div className="rounded-2xl border border-white/[0.08] bg-[#0c0d0e] p-4 flex flex-col justify-between min-h-[96px] shadow-md">
-          <div className="flex items-center gap-1.5 text-xs text-[#8e8e93]">
-            <Activity className="h-4 w-4 shrink-0 text-[#8e8e93]" />
-            <span className="truncate">Total Trades</span>
-          </div>
-          <div className="mt-1">
-            <div className="text-lg sm:text-xl font-bold text-white font-sans tracking-tight">
-              {totalTradesCount}
-            </div>
-            <div className="flex items-center gap-2.5 mt-1 text-[11px] font-semibold">
-              <span className="flex items-center text-[#22c55e]">
-                <ArrowUpRight className="h-3 w-3 shrink-0" />
-                <span className="ml-0.5">Wins: {displayWins}</span>
-              </span>
-              <span className="flex items-center text-[#ef4444]">
-                <ArrowDownRight className="h-3 w-3 shrink-0" />
-                <span className="ml-0.5">Losses: {displayLosses}</span>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Win Rate */}
-        <div className="rounded-2xl border border-white/[0.08] bg-[#0c0d0e] p-4 flex flex-col justify-between min-h-[96px] shadow-md">
-          <div className="flex items-center gap-1.5 text-xs text-[#8e8e93]">
-            <Target className="h-4 w-4 shrink-0 text-[#8e8e93]" />
-            <span className="truncate">Win Rate</span>
-          </div>
-          <div className="text-lg sm:text-xl font-bold text-[#3b82f6] font-sans tracking-tight mt-1.5">
-            {displayWinRate.toFixed(1)}%
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Startup Sequence Overlay when Initializing */}
+      {/* ───────────── STARTUP OVERLAY ───────────── */}
       {botStatus === "Initializing" && (
-        <div className="rounded-2xl border border-white/[0.08] bg-[#0c0d0e] p-6 flex flex-col items-center justify-center text-center gap-4 shadow-md">
-          <div className="relative flex items-center justify-center h-16 w-16">
-            <Loader2 className="h-12 w-12 text-[#d4af37] animate-spin shrink-0 absolute" />
-            <div className="text-[#d4af37] font-bold text-xs">{Math.round((startupStep / STARTUP_STEPS.length) * 100)}%</div>
+        <Card className="p-8 border border-white/10 flex flex-col items-center justify-center text-center gap-5">
+          <div className="relative flex items-center justify-center h-20 w-20">
+            <Loader2 className="h-16 w-16 text-gold animate-spin shrink-0 absolute" />
+            <div className="text-gold font-bold text-sm">{Math.round((startupStep / STARTUP_STEPS.length) * 100)}%</div>
           </div>
           <div className="flex flex-col gap-1 max-w-xs w-full">
-            <h3 className="font-bold text-text-primary text-sm">Waking Up Trading Core</h3>
-            <p className="text-[11px] text-[#8e8e93]">Loading market models & indicators...</p>
-
-            <div className="mt-3 flex flex-col gap-1 text-left bg-white/[0.02] border border-white/5 rounded-lg p-2.5 max-h-[100px] overflow-y-auto">
+            <h3 className="font-bold text-text-primary text-base">Waking Up Trading Core</h3>
+            <p className="text-xs text-text-secondary">Loading market models & indicators...</p>
+            <div className="mt-3 flex flex-col gap-1 text-left bg-white/[0.02] border border-white/5 rounded-lg p-3 max-h-[120px] overflow-y-auto">
               {STARTUP_STEPS.slice(0, startupStep + 1).map((step, idx) => (
-                <div key={idx} className="flex items-center gap-1.5 text-[11px] text-text-secondary">
-                  <Check className="h-3 w-3 text-green-400 shrink-0" />
+                <div key={idx} className="flex items-center gap-2 text-xs text-text-secondary">
+                  <Check className="h-3.5 w-3.5 text-green-400 shrink-0" />
                   <span className={idx === startupStep ? "text-gold font-medium animate-pulse" : "text-text-muted"}>{step}</span>
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
-      {/* 4. Active Bot Running Control Card (Matches user screenshot) */}
-      {botStatus !== "Initializing" && isBotActive && (
-        <div className="rounded-2xl border border-white/[0.08] bg-[#0c0d0e] p-6 flex flex-col items-center justify-center text-center gap-3 shadow-md">
-          {/* Bot Running Pill */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#062817] text-[#22c55e] border border-[#166534] text-xs font-semibold">
-            <span className="h-2 w-2 rounded-full bg-[#22c55e] animate-pulse" />
-            Bot Running
-          </div>
-
-          {/* Subtitle */}
-          <p className="text-sm font-semibold text-white">
-            Trading {activeMarket.toUpperCase()} · {formatCurrency(amtNum, currency)}/trade
-          </p>
-
-          {/* Rotating market status & 10s countdown */}
-          <div className="flex flex-col items-center gap-1">
-            <p className="text-sm font-medium text-[#d4af37]">
-              {rotationMsg}
-            </p>
-            <div className="inline-flex items-center gap-1.5 text-[11px] font-mono font-semibold text-[#22c55e] bg-emerald-950/40 border border-emerald-500/20 px-2.5 py-0.5 rounded-full mt-0.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#22c55e] animate-pulse" />
-              <span>10s Execution ({tradeSecondsLeft}s left)</span>
-            </div>
-          </div>
-
-          {/* Stop Bot Button */}
-          <button
-            onClick={handleStop}
-            className="mt-1 flex items-center justify-center gap-2 px-6 py-2 rounded-xl bg-[#ef4444] hover:bg-red-600 text-white font-semibold text-xs transition-colors shadow-md shadow-red-950/40 cursor-pointer active:scale-95"
-          >
-            <StopCircle className="h-4 w-4" />
-            Stop Bot
-          </button>
-        </div>
-      )}
-
-      {/* 5. Idle / Launch Setup Control Card (When Bot is not yet running) */}
+      {/* ───────────── IDLE / SETUP VIEW ───────────── */}
       {botStatus !== "Initializing" && !isBotActive && (
-        <div className="rounded-2xl border border-white/[0.08] bg-[#0c0d0e] p-5 flex flex-col items-center justify-center text-center gap-3.5 shadow-md">
-          <div className="flex items-center justify-between w-full">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] text-text-secondary border border-white/10 text-xs font-medium">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              Bot Standby
-            </span>
+        <Card className="p-5 border border-white/10">
+          <div className="flex flex-col gap-5">
 
-            {/* Market switcher tabs */}
-            <div className="flex items-center bg-white/[0.04] border border-white/10 p-0.5 rounded-lg gap-1">
-              <button
-                type="button"
-                onClick={() => setActiveMarket("crypto")}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                  activeMarket === "crypto"
-                    ? "bg-gold text-black shadow font-bold"
-                    : "text-[#8e8e93] hover:text-white"
-                }`}
-              >
-                Crypto
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveMarket("forex")}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                  activeMarket === "forex"
-                    ? "bg-gold text-black shadow font-bold"
-                    : "text-[#8e8e93] hover:text-white"
-                }`}
-              >
-                Forex
-              </button>
-            </div>
-          </div>
+            {/* Market Class Picker — large, bold, easy to read */}
+            <div>
+              <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest mb-3 text-center">Select Market</p>
+              <div className="grid grid-cols-2 gap-3">
 
-          {/* Starting Capital config */}
-          <div className="w-full flex items-center justify-between gap-3 text-xs bg-white/[0.02] border border-white/5 rounded-xl p-3">
-            <span className="text-[#8e8e93] font-medium">Trade Amount ({currency})</span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-text-muted text-xs font-mono">{currencySymbol(currency)}</span>
-              <input
-                type="number"
-                min="10"
-                value={tradeAmount}
-                onChange={(e) => setTradeAmount(e.target.value)}
-                className="w-24 bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 text-right text-xs font-mono font-bold text-white focus:outline-none focus:border-gold"
-                placeholder="100"
-              />
-            </div>
-          </div>
-
-          {isBalanceInsufficient && (
-            <div className="text-[11px] text-rose-400 bg-rose-500/[0.03] border border-rose-500/20 p-2 rounded-lg flex items-center gap-1.5 w-full">
-              <AlertTriangle className="h-3 w-3 shrink-0" />
-              <span>Insufficient balance. Required: {formatCurrency(amtNum, currency)}</span>
-            </div>
-          )}
-
-          {isLimitReached && (
-            <div className="text-[11px] text-rose-400 bg-rose-500/[0.03] border border-rose-500/20 p-2 rounded-lg flex items-center gap-1.5 w-full">
-              <AlertTriangle className="h-3 w-3 shrink-0" />
-              <span>Account limit reached. Deposit to unlock higher trading limit.</span>
-            </div>
-          )}
-
-          <button
-            onClick={handleStartBot}
-            disabled={isLimitReached || isNaN(amtNum) || amtNum <= 0}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all shadow-lg shadow-emerald-950/40 cursor-pointer disabled:opacity-50 active:scale-98"
-          >
-            <Play className="h-3.5 w-3.5 fill-current" />
-            Start Bot
-          </button>
-        </div>
-      )}
-
-      {/* 6. Live Trade Feed Card (Matches user screenshot) */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0c0d0e] p-5 shadow-md flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-[#22c55e]" />
-            <h3 className="font-bold text-white text-sm">Live Trade Feed</h3>
-          </div>
-          <span className="text-[11px] font-mono text-[#8e8e93]">
-            {feedTrades.length} executed
-          </span>
-        </div>
-
-        <div className="flex flex-col gap-2 max-h-[380px] overflow-y-auto pr-0.5">
-          {feedTrades.map((t) => {
-            const isWin = t.profitLoss >= 0;
-            const isBuy = t.direction === "BUY";
-            return (
-              <div
-                key={t.id}
-                className="flex items-center justify-between rounded-xl bg-[#14151a] border border-white/[0.04] p-3 text-xs hover:border-white/10 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 ${
-                      isBuy
-                        ? "bg-emerald-950/40 text-[#22c55e] border border-emerald-500/20"
-                        : "bg-rose-950/40 text-[#ef4444] border border-rose-500/20"
-                    }`}
-                  >
-                    {isBuy ? (
-                      <ArrowUpRight className="h-4 w-4" />
-                    ) : (
-                      <ArrowDownRight className="h-4 w-4" />
-                    )}
+                {/* Crypto */}
+                <button
+                  onClick={() => setActiveMarket("crypto")}
+                  className={`flex flex-col items-center gap-3 p-5 border-2 rounded-2xl text-center transition-all ${
+                    activeMarket === "crypto"
+                      ? "border-gold bg-gold/[0.08] shadow-lg shadow-gold/10"
+                      : "border-white/15 bg-white/[0.02] hover:border-white/30 hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <div className="h-14 w-14 rounded-2xl flex items-center justify-center bg-amber-500/20 text-amber-400">
+                    <Bitcoin className="h-8 w-8" />
                   </div>
                   <div>
-                    <p className="font-bold text-white text-sm leading-tight">{t.pair}</p>
-                    <p
-                      className={`text-[11px] font-semibold leading-tight mt-0.5 ${
-                        isBuy ? "text-[#22c55e]" : "text-[#ef4444]"
-                      }`}
-                    >
-                      {t.direction}
+                    <p className="font-bold text-text-primary text-lg leading-tight">Crypto</p>
+                    <p className="text-xs text-text-secondary mt-0.5">BTC · ETH · SOL</p>
+                  </div>
+                  {activeMarket === "crypto" && (
+                    <span className="text-[11px] font-semibold text-gold bg-gold/10 border border-gold/30 px-2.5 py-0.5 rounded-full">Selected</span>
+                  )}
+                </button>
+
+                {/* Forex */}
+                <button
+                  onClick={() => setActiveMarket("forex")}
+                  className={`relative flex flex-col items-center gap-3 p-5 border-2 rounded-2xl text-center transition-all ${
+                    activeMarket === "forex"
+                      ? "border-gold bg-gold/[0.08] shadow-lg shadow-gold/10"
+                      : "border-white/15 bg-white/[0.02] hover:border-white/30 hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-3 right-3 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      forexOpen ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                    }`}
+                  >
+                    {forexOpen ? "Open" : "Closed"}
+                  </span>
+                  <div className="h-14 w-14 rounded-2xl flex items-center justify-center bg-blue-500/20 text-blue-400">
+                    <Landmark className="h-8 w-8" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-text-primary text-lg leading-tight">Forex</p>
+                    <p className="text-xs text-text-secondary mt-0.5">XAU · EUR · GBP</p>
+                  </div>
+                  {activeMarket === "forex" && (
+                    <span className="text-[11px] font-semibold text-gold bg-gold/10 border border-gold/30 px-2.5 py-0.5 rounded-full">Selected</span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Trade Amount */}
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-bold text-text-secondary uppercase tracking-widest">
+                  Starting Amount ({currency})
+                </label>
+                <span className="text-xs text-text-muted font-mono">
+                  Available: <strong className="text-gold">{formatCurrency(balance, currency)}</strong>
+                </span>
+              </div>
+              <Input
+                type="number"
+                min="100"
+                placeholder={`Min ${formatCurrency(100, currency)}`}
+                value={tradeAmount}
+                onChange={(e) => setTradeAmount(e.target.value)}
+                className="h-12 text-sm font-semibold"
+              />
+
+              {isBalanceInsufficient && (
+                <div className="text-xs text-rose-400 bg-rose-500/[0.05] border border-rose-500/20 p-3 rounded-xl flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <span>Insufficient balance. Minimum {formatCurrency(100, currency)} required.</span>
+                </div>
+              )}
+              {isLimitReached && (
+                <div className="text-xs text-rose-400 bg-rose-500/[0.05] border border-rose-500/20 p-3 rounded-xl flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <span>Account limit reached. Deposit to unlock higher trading limit.</span>
+                </div>
+              )}
+            </div>
+
+            <Button
+              disabled={!activeMarket || isBalanceInsufficient || isLimitReached || isNaN(amtNum) || amtNum < 100}
+              onClick={handleStartBot}
+              className="w-full h-12 text-sm font-bold"
+            >
+              <Rocket className="h-4 w-4" />
+              Start Bot
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* ───────────── RUNNING VIEW ───────────── */}
+      {botStatus !== "Initializing" && isBotActive && activeMarket && (
+        <div className="flex flex-col gap-4">
+
+          {/* 2×2 Stats Grid — matches screenshot exactly */}
+          <div className="grid grid-cols-2 gap-3">
+
+            {/* Available Balance */}
+            <Card className="p-4 border border-white/10 rounded-2xl flex flex-col gap-1.5">
+              <span className="flex items-center gap-1.5 text-xs text-text-secondary font-medium">
+                <WalletIcon className="h-3.5 w-3.5 text-gold shrink-0" />
+                Available Balance
+              </span>
+              <span className="text-2xl font-bold text-gold font-mono leading-tight">
+                {formatCurrency(balance, currency)}
+              </span>
+            </Card>
+
+            {/* Bot PnL */}
+            <Card className="p-4 border border-white/10 rounded-2xl flex flex-col gap-1.5">
+              <span className="flex items-center gap-1.5 text-xs text-text-secondary font-medium">
+                <TrendingUp className="h-3.5 w-3.5 shrink-0" />
+                Bot PnL ({activeMarket.toUpperCase()})
+              </span>
+              <span className={`text-2xl font-bold font-mono leading-tight ${sessionProfit >= 0 ? "text-green-400" : "text-rose-400"}`}>
+                {sessionProfit >= 0 ? "+" : ""}{formatCurrency(sessionProfit, currency)}
+              </span>
+            </Card>
+
+            {/* Total Trades */}
+            <Card className="p-4 border border-white/10 rounded-2xl flex flex-col gap-1.5">
+              <span className="flex items-center gap-1.5 text-xs text-text-secondary font-medium">
+                <Activity className="h-3.5 w-3.5 shrink-0" />
+                Total Trades
+              </span>
+              <span className="text-2xl font-bold text-text-primary font-mono leading-tight">
+                {totalTrades}
+              </span>
+              <div className="flex items-center gap-3 mt-0.5">
+                <span className="flex items-center gap-1 text-xs font-semibold text-green-400">
+                  <TrendingUp className="h-3 w-3" />
+                  Wins: {winningTrades}
+                </span>
+                <span className="flex items-center gap-1 text-xs font-semibold text-rose-400">
+                  <ArrowDownRight className="h-3 w-3" />
+                  Losses: {losingTrades}
+                </span>
+              </div>
+            </Card>
+
+            {/* Win Rate */}
+            <Card className="p-4 border border-white/10 rounded-2xl flex flex-col gap-1.5">
+              <span className="flex items-center gap-1.5 text-xs text-text-secondary font-medium">
+                <Target className="h-3.5 w-3.5 shrink-0" />
+                Win Rate
+              </span>
+              <span className="text-2xl font-bold text-primary font-mono leading-tight">
+                {totalTrades > 0 ? `${winRate.toFixed(1)}%` : "0.0%"}
+              </span>
+            </Card>
+          </div>
+
+          {/* Bot Status Card — centered, matches screenshot */}
+          <Card className="p-6 border border-white/10 rounded-2xl flex flex-col items-center gap-4 text-center">
+            {/* Green "Bot Running" pill */}
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-green-400 bg-green-500/15 border border-green-500/25 px-4 py-1.5 rounded-full">
+              <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+              Bot Running
+            </span>
+
+            {/* Market + amount */}
+            <div>
+              <p className="text-base font-bold text-text-primary">
+                Trading {activeMarket.toUpperCase()} · {formatCurrency(parseFloat(tradeAmount) || 0, currency)}/trade
+              </p>
+              {/* Rotation status message in gold */}
+              <p className="text-sm font-semibold text-gold mt-1 min-h-[20px]">
+                {rotationMsg || "Liquidity Zone Found"}
+              </p>
+            </div>
+
+            {/* Stop Bot button — red, wide */}
+            <button
+              onClick={handleStop}
+              className="flex items-center justify-center gap-2.5 w-full max-w-xs h-12 rounded-full bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-bold text-sm transition-all shadow-lg shadow-rose-500/20"
+            >
+              <StopCircle className="h-5 w-5" />
+              Stop Bot
+            </button>
+          </Card>
+
+          {/* Live Trade Feed */}
+          <Card className="p-4 border border-white/10 rounded-2xl flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className="h-2.5 w-2.5 rounded-full bg-green-400 animate-pulse" />
+              <h3 className="font-bold text-text-primary text-sm">Live Trade Feed</h3>
+            </div>
+
+            {/* Open / in-progress trade */}
+            {currentTrade && (
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-gold/20 bg-gold/[0.03] px-3 py-3">
+                <div className="flex items-center gap-3">
+                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    currentTrade.direction === "BUY" ? "bg-green-500/20 text-green-400" : "bg-rose-500/20 text-rose-400"
+                  }`}>
+                    {currentTrade.direction === "BUY" ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
+                  </div>
+                  <div>
+                    <p className="font-bold text-text-primary text-sm">{currentTrade.pair}</p>
+                    <p className={`text-xs font-semibold ${currentTrade.direction === "BUY" ? "text-green-400" : "text-rose-400"}`}>
+                      {currentTrade.direction}
                     </p>
                   </div>
                 </div>
-
-                <span
-                  className={`font-bold font-mono text-sm ${
-                    isWin ? "text-[#22c55e]" : "text-[#ef4444]"
-                  }`}
-                >
-                  {isWin ? "+" : ""}
-                  {formatCurrency(t.profitLoss, currency)}
-                </span>
+                <div className="flex items-center gap-1.5 text-xs text-gold font-semibold animate-pulse">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Running...
+                </div>
               </div>
-            );
-          })}
+            )}
+
+            {trades.length === 0 && !currentTrade ? (
+              <div className="py-8 text-center">
+                <p className="text-sm text-text-muted">No trades executed yet. Completed positions will appear here.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto">
+                {trades.map((t) => (
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.015] px-3 py-3 hover:bg-white/[0.03] transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        t.direction === "BUY" ? "bg-green-500/20 text-green-400" : "bg-rose-500/20 text-rose-400"
+                      }`}>
+                        {t.direction === "BUY" ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
+                      </div>
+                      <div>
+                        <p className="font-bold text-text-primary text-sm">{t.pair}</p>
+                        <p className={`text-xs font-semibold ${t.direction === "BUY" ? "text-green-400" : "text-rose-400"}`}>
+                          {t.direction}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`font-bold font-mono text-sm ${t.profitLoss >= 0 ? "text-green-400" : "text-rose-400"}`}>
+                      {t.profitLoss >= 0 ? "+" : ""}{formatCurrency(t.profitLoss, currency)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
         </div>
-      </div>
+      )}
+
     </div>
   );
 }

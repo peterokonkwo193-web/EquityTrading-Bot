@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, ChevronDown, Settings as SettingsIcon, LogOut, Wallet, PanelLeft } from "lucide-react";
+import { Menu, ChevronDown, Settings as SettingsIcon, LogOut, Wallet } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { useAuth } from "@/context/AuthContext";
 import { useAccount } from "@/context/AccountContext";
@@ -38,56 +38,40 @@ export function Topbar({ onMenuClick, onLogoutClick, onAccountSwitchClick }: Top
 
   const pageTitle = NAV_ITEMS.find((item) => pathname.startsWith(item.href))?.label ?? "Dashboard";
 
-  const firstName = user?.name ? user.name.split(" ")[0] : "Trader";
-  const currency = selectedAccount?.currency || "USD";
-  const initial = user?.name ? user.name[0].toUpperCase() : "U";
-
   return (
-    <header className="sticky top-0 z-30 flex h-14 md:h-16 items-center justify-between border-b border-white/10 bg-black/80 px-4 backdrop-blur-md md:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/10 bg-black/70 px-4 backdrop-blur-md md:px-6">
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
-          className="text-text-primary hover:text-white md:hidden p-1 -ml-1 transition-colors"
+          className="text-text-secondary hover:text-text-primary md:hidden"
           aria-label="Open menu"
         >
-          <PanelLeft className="h-6 w-6 stroke-[1.75]" />
+          <Menu className="h-5 w-5" />
         </button>
-        <h1 className="hidden md:block text-lg font-semibold text-text-primary">{pageTitle}</h1>
+        <h1 className="text-lg font-semibold text-text-primary">{pageTitle}</h1>
       </div>
 
-      <div className="flex items-center gap-2.5 md:gap-4">
-        {/* Mobile: Currency & User Name Stacked */}
+      <div className="flex items-center gap-2 md:gap-4">
         <button
           onClick={onAccountSwitchClick}
-          className="flex flex-col items-end text-right md:hidden cursor-pointer"
-        >
-          <span className="text-[10px] font-medium text-text-muted uppercase leading-tight tracking-wide">
-            {currency}
-          </span>
-          <span className="text-xs font-semibold text-text-primary leading-tight">
-            {firstName}
-          </span>
-        </button>
-
-        {/* Desktop: Wallet Pill */}
-        <button
-          onClick={onAccountSwitchClick}
-          className="hidden md:flex glass items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs text-text-secondary hover:text-text-primary border border-white/10"
+          className="glass flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs text-text-secondary hover:text-text-primary border border-white/10"
         >
           <Wallet className="h-3.5 w-3.5 shrink-0" />
-          <span>{selectedAccount ? selectedAccount.name : "Select account"}</span>
+          <span className="hidden sm:inline">
+            {selectedAccount ? selectedAccount.name : "Select account"}
+          </span>
+          <span className="sm:hidden text-[10px]">
+            {selectedAccount ? selectedAccount.name.split(" ")[0] : "Select"}
+          </span>
         </button>
 
-        {/* Profile Avatar */}
         <div ref={profileRef} className="relative">
           <button
             onClick={() => setIsProfileOpen((prev) => !prev)}
             className="flex items-center gap-2"
             aria-label="Profile menu"
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 font-bold text-white text-xs shadow-md">
-              {initial}
-            </div>
+            <Avatar name={user?.name ?? "?"} size="sm" />
             <ChevronDown className="hidden h-4 w-4 text-text-muted sm:block" />
           </button>
 

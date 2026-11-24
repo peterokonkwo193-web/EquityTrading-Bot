@@ -153,7 +153,7 @@ model SimulatedTrade {
   amount          Decimal        @db.Decimal(18, 2)
   profitLoss      Decimal        @default(0) @db.Decimal(18, 2)
   status          TradeStatus    @default(OPEN)
-  durationSeconds Int            @default(10)
+  durationSeconds Int            @default(20)
   openedAt        DateTime       @default(now())
   closesAt        DateTime
   closedAt        DateTime?
