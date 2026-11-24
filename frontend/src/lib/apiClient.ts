@@ -37,6 +37,11 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const headers: Record<string, string> = {};
   if (options.body) headers["Content-Type"] = "application/json";
   if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (typeof window !== "undefined") {
+    try {
+      headers["X-Timezone"] = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {}
+  }
 
   const baseUrl = getApiUrl();
 

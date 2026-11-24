@@ -4,72 +4,52 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, ArrowDownRight, Activity } from "lucide-react";
 import { CryptoIcon } from "@/components/ui/CryptoIcon";
 import { Card } from "@/components/ui/Card";
-import { fetchTicker } from "@/lib/endpoints";
-
-const POLL_INTERVAL_MS = 4000;
+import { useTicker } from "@/hooks/useTicker";
 
 export function LiveMarketChart() {
+  const { entries } = useTicker();
   const [prices, setPrices] = useState<Record<string, { price: number; changePct: number }>>({});
   const [flashStates, setFlashStates] = useState<Record<string, "up" | "down" | null>>({});
   const [activeTab, setActiveTab] = useState<"ALL" | "CRYPTO" | "FOREX">("ALL");
   const pricesRef = useRef<Record<string, { price: number; changePct: number }>>({});
-  const isPollingRef = useRef(false);
   const flashResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    if (!entries || entries.length === 0) return;
 
-    const poll = async () => {
-      // Skip this tick if the previous poll is still in flight, to avoid
-      // overlapping cycles racing each other's flash-reset timeouts.
-      if (isPollingRef.current) return;
-      isPollingRef.current = true;
+    const nextPrices: Record<string, { price: number; changePct: number }> = {};
+    const nextFlash: Record<string, "up" | "down" | null> = {};
 
-      try {
-        const data = await fetchTicker();
-        if (cancelled) return;
+    entries.forEach((entry) => {
+      const prevPrice = pricesRef.current[entry.symbol]?.price ?? entry.price;
+      // Generate slight simulated fluctuations for live visual effect
+      const noise = (Math.random() - 0.5) * (entry.price * 0.0005);
+      const finalPrice = entry.price + noise;
 
-        const nextPrices: Record<string, { price: number; changePct: number }> = {};
-        const nextFlash: Record<string, "up" | "down" | null> = {};
-
-        data.forEach((entry) => {
-          const prevPrice = pricesRef.current[entry.symbol]?.price ?? entry.price;
-          // Generate slight simulated fluctuations for live visual effect between polls
-          const noise = (Math.random() - 0.5) * (entry.price * 0.0005);
-          const finalPrice = entry.price + noise;
-
-          if (finalPrice > prevPrice) {
-            nextFlash[entry.symbol] = "up";
-          } else if (finalPrice < prevPrice) {
-            nextFlash[entry.symbol] = "down";
-          }
-
-          nextPrices[entry.symbol] = {
-            price: finalPrice,
-            changePct: entry.changePct + (noise / entry.price) * 100,
-          };
-        });
-
-        pricesRef.current = nextPrices;
-        setPrices(nextPrices);
-        setFlashStates(nextFlash);
-
-        if (flashResetTimeoutRef.current) clearTimeout(flashResetTimeoutRef.current);
-        flashResetTimeoutRef.current = setTimeout(() => {
-          if (!cancelled) setFlashStates({});
-        }, 600);
-      } catch (err) {
-        console.error("Failed to fetch live prices ticker", err);
-      } finally {
-        isPollingRef.current = false;
+      if (finalPrice > prevPrice) {
+        nextFlash[entry.symbol] = "up";
+      } else if (finalPrice < prevPrice) {
+        nextFlash[entry.symbol] = "down";
       }
-    };
 
-    poll();
-    const interval = setInterval(poll, POLL_INTERVAL_MS);
+      nextPrices[entry.symbol] = {
+        price: finalPrice,
+        changePct: entry.changePct + (noise / entry.price) * 100,
+      };
+    });
+
+    pricesRef.current = nextPrices;
+    setPrices(nextPrices);
+    setFlashStates(nextFlash);
+
+    if (flashResetTimeoutRef.current) clearTimeout(flashResetTimeoutRef.current);
+    flashResetTimeoutRef.current = setTimeout(() => {
+      setFlashStates({});
+    }, 600);
+  }, [entries]);
+
+  useEffect(() => {
     return () => {
-      cancelled = true;
-      clearInterval(interval);
       if (flashResetTimeoutRef.current) clearTimeout(flashResetTimeoutRef.current);
     };
   }, []);

@@ -26,10 +26,6 @@ const forexState: Record<string, { price: number; changePct: number }> = Object.
   Object.entries(FOREX_BASE_PRICES).map(([symbol, price]) => [symbol, { price, changePct: 0 }])
 );
 
-const CACHE_TTL_MS = 30_000;
-let cachedCrypto: TickerEntry[] | null = null;
-let cachedAt = 0;
-
 const FALLBACK_CRYPTO: Record<string, { price: number; changePct: number }> = {
   BTC: { price: 95400, changePct: 1.8 },
   ETH: { price: 3240, changePct: 2.1 },
@@ -37,12 +33,22 @@ const FALLBACK_CRYPTO: Record<string, { price: number; changePct: number }> = {
   SOL: { price: 196, changePct: 3.4 },
 };
 
+const CACHE_TTL_MS = 30_000;
+let cachedCrypto: TickerEntry[] = Object.entries(FALLBACK_CRYPTO).map(([symbol, data]) => ({
+  symbol,
+  assetClass: "CRYPTO" as const,
+  price: data.price,
+  changePct: data.changePct,
+}));
+let cachedAt = 0;
+let isRefreshing = false;
+
 async function fetchCryptoPrices(): Promise<TickerEntry[]> {
   const ids = Object.values(COINGECKO_IDS).join(",");
   const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
 
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(1500) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
     if (!res.ok) throw new Error(`CoinGecko responded ${res.status}`);
     const data = (await res.json()) as Record<string, { usd: number; usd_24h_change?: number }>;
 
@@ -54,15 +60,21 @@ async function fetchCryptoPrices(): Promise<TickerEntry[]> {
     }));
   } catch (err) {
     logger.warn("CoinGecko fetch failed, serving last known prices", err);
-    return (
-      cachedCrypto ??
-      Object.entries(FALLBACK_CRYPTO).map(([symbol, data]) => ({
-        symbol,
-        assetClass: "CRYPTO" as const,
-        price: data.price,
-        changePct: data.changePct,
-      }))
-    );
+    return cachedCrypto;
+  }
+}
+
+async function refreshCryptoPricesInBackground() {
+  if (isRefreshing) return;
+  isRefreshing = true;
+  try {
+    const fresh = await fetchCryptoPrices();
+    if (fresh && fresh.length > 0) {
+      cachedCrypto = fresh;
+      cachedAt = Date.now();
+    }
+  } finally {
+    isRefreshing = false;
   }
 }
 
@@ -77,9 +89,12 @@ function tickForexPrices(): TickerEntry[] {
 
 export async function getTicker(): Promise<TickerEntry[]> {
   const now = Date.now();
-  if (!cachedCrypto || now - cachedAt > CACHE_TTL_MS) {
-    cachedCrypto = await fetchCryptoPrices();
-    cachedAt = now;
+  if (now - cachedAt > CACHE_TTL_MS) {
+    // Non-blocking background refresh: client receives instantaneous response from memory
+    void refreshCryptoPricesInBackground();
+    if (cachedAt === 0) {
+      cachedAt = now; // prevent immediate duplicate trigger
+    }
   }
   return [...cachedCrypto, ...tickForexPrices()];
 }

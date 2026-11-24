@@ -5,7 +5,8 @@ import { Wallet, TrendingUp, Activity, Target, CheckCircle2, XCircle, ShieldChec
 import { useAuth } from "@/context/AuthContext";
 import { useAccount } from "@/context/AccountContext";
 import { useTradingStats } from "@/hooks/useTradingStats";
-import { fetchWallet, fetchTicker } from "@/lib/endpoints";
+import { useTicker } from "@/hooks/useTicker";
+import { fetchWallet } from "@/lib/endpoints";
 import { Wallet as WalletType } from "@/types";
 import { formatCurrency } from "@/lib/currency";
 import { SummaryCard } from "@/components/dashboard/SummaryCard";
@@ -15,27 +16,48 @@ import { Testimonials } from "@/components/dashboard/Testimonials";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 
+const WALLET_STORAGE_PREFIX = "bot-trading:wallet-";
 const walletCache: Record<string, WalletType> = {};
+
+function getCachedWallet(accountId: string | null): WalletType | null {
+  if (!accountId || typeof window === "undefined") return null;
+  if (walletCache[accountId]) return walletCache[accountId];
+  try {
+    const raw = sessionStorage.getItem(`${WALLET_STORAGE_PREFIX}${accountId}`);
+    if (raw) {
+      const parsed = JSON.parse(raw) as WalletType;
+      walletCache[accountId] = parsed;
+      return parsed;
+    }
+  } catch {}
+  return null;
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { selectedAccount, isLoading: isAccountLoading } = useAccount();
   const accountId = selectedAccount?.id ?? null;
   const { stats, isLoading: isStatsLoading } = useTradingStats(accountId);
-  const [wallet, setWallet] = useState<WalletType | null>(() => (accountId ? walletCache[accountId] ?? null : null));
+  const { entries: tickerEntries } = useTicker();
+  const [wallet, setWallet] = useState<WalletType | null>(() => getCachedWallet(accountId));
   const [sentiment, setSentiment] = useState<{ label: "Bullish" | "Bearish"; confidence: number } | null>(null);
 
   useEffect(() => {
     if (!accountId) return;
-    if (walletCache[accountId]) {
-      setWallet(walletCache[accountId]);
-    }
+    const cached = getCachedWallet(accountId);
+    if (cached) setWallet(cached);
+
     let cancelled = false;
     const load = () => {
       fetchWallet(accountId)
         .then((data) => {
           if (!cancelled) {
             walletCache[accountId] = data;
+            if (typeof window !== "undefined") {
+              try {
+                sessionStorage.setItem(`${WALLET_STORAGE_PREFIX}${accountId}`, JSON.stringify(data));
+              } catch {}
+            }
             setWallet(data);
           }
         })
@@ -51,19 +73,11 @@ export default function DashboardPage() {
   }, [accountId, stats?.tradesCount]);
 
   useEffect(() => {
-    let cancelled = false;
-    fetchTicker()
-      .then((entries) => {
-        if (cancelled || entries.length === 0) return;
-        const avgChange = entries.reduce((sum, e) => sum + e.changePct, 0) / entries.length;
-        const confidence = Math.min(95, Math.max(50, 50 + Math.abs(avgChange) * 15));
-        setSentiment({ label: avgChange >= 0 ? "Bullish" : "Bearish", confidence });
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    if (!tickerEntries || tickerEntries.length === 0) return;
+    const avgChange = tickerEntries.reduce((sum, e) => sum + e.changePct, 0) / tickerEntries.length;
+    const confidence = Math.min(95, Math.max(50, 50 + Math.abs(avgChange) * 15));
+    setSentiment({ label: avgChange >= 0 ? "Bullish" : "Bearish", confidence });
+  }, [tickerEntries]);
 
   const firstName = user?.name.split(" ")[0] ?? "there";
   const currency = selectedAccount?.currency ?? "USD";
@@ -97,13 +111,13 @@ export default function DashboardPage() {
             <SummaryCard
               icon={TrendingUp}
               label="Today's Profit"
-              value={`${Number(stats.todayPnl) >= 0 ? "+" : ""}${formatCurrency(stats.todayPnl, currency)}`}
+              value={`${Number(stats.todayPnl) > 0 ? "+" : ""}${formatCurrency(stats.todayPnl, currency)}`}
               accent={Number(stats.todayPnl) >= 0 ? "success" : "danger"}
             />
             <SummaryCard
               icon={Activity}
               label="Total Profit"
-              value={`${Number(stats.totalPnl) >= 0 ? "+" : ""}${formatCurrency(stats.totalPnl, currency)}`}
+              value={`${Number(stats.totalPnl) > 0 ? "+" : ""}${formatCurrency(stats.totalPnl, currency)}`}
               accent={Number(stats.totalPnl) >= 0 ? "success" : "danger"}
             />
             <SummaryCard icon={Target} label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} accent="blue" />

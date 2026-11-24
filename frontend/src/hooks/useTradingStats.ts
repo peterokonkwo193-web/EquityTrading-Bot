@@ -3,18 +3,42 @@ import { TradingStats } from "@/types";
 import { fetchTradingStats } from "@/lib/endpoints";
 
 const POLL_INTERVAL_MS = 5000;
+const STATS_STORAGE_PREFIX = "bot-trading:stats-";
 
 const statsCache: Record<string, TradingStats> = {};
 
+function getCachedStats(accountId: string | null): TradingStats | null {
+  if (!accountId || typeof window === "undefined") return null;
+  if (statsCache[accountId]) return statsCache[accountId];
+  try {
+    const raw = sessionStorage.getItem(`${STATS_STORAGE_PREFIX}${accountId}`);
+    if (raw) {
+      const parsed = JSON.parse(raw) as TradingStats;
+      statsCache[accountId] = parsed;
+      return parsed;
+    }
+  } catch {}
+  return null;
+}
+
+function persistStats(accountId: string, data: TradingStats) {
+  statsCache[accountId] = data;
+  if (typeof window !== "undefined") {
+    try {
+      sessionStorage.setItem(`${STATS_STORAGE_PREFIX}${accountId}`, JSON.stringify(data));
+    } catch {}
+  }
+}
+
 export function useTradingStats(accountId: string | null) {
-  const [stats, setStats] = useState<TradingStats | null>(() => (accountId ? statsCache[accountId] ?? null : null));
-  const [isLoading, setIsLoading] = useState(() => !(accountId && statsCache[accountId]));
+  const [stats, setStats] = useState<TradingStats | null>(() => getCachedStats(accountId));
+  const [isLoading, setIsLoading] = useState(() => !getCachedStats(accountId));
 
   const refreshStats = useCallback(async () => {
     if (!accountId) return;
     try {
       const data = await fetchTradingStats(accountId);
-      statsCache[accountId] = data;
+      persistStats(accountId, data);
       setStats(data);
     } catch {}
   }, [accountId]);
@@ -26,8 +50,9 @@ export function useTradingStats(accountId: string | null) {
       return;
     }
 
-    if (statsCache[accountId]) {
-      setStats(statsCache[accountId]);
+    const cached = getCachedStats(accountId);
+    if (cached) {
+      setStats(cached);
       setIsLoading(false);
     } else {
       setIsLoading(true);
@@ -39,7 +64,7 @@ export function useTradingStats(accountId: string | null) {
       try {
         const data = await fetchTradingStats(accountId);
         if (!cancelled) {
-          statsCache[accountId] = data;
+          persistStats(accountId, data);
           setStats(data);
         }
       } catch {

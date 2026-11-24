@@ -21,11 +21,13 @@ export const getHistory = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getStatsHandler = asyncHandler(async (req: Request, res: Response) => {
-  const stats = await getStats(req.user!.userId, param(req.params.accountId));
+  const tz = (req.headers["x-timezone"] as string) || (req.query.tz as string) || undefined;
+  const stats = await getStats(req.user!.userId, param(req.params.accountId), tz);
   sendSuccess(res, stats);
 });
 
 export const postSettleBotTrade = asyncHandler(async (req: Request, res: Response) => {
-  const result = await settleBotTrade(req.user!.userId, param(req.params.accountId), req.body);
+  const tz = (req.headers["x-timezone"] as string) || (req.query.tz as string) || undefined;
+  const result = await settleBotTrade(req.user!.userId, param(req.params.accountId), req.body, tz);
   sendSuccess(res, result);
 });

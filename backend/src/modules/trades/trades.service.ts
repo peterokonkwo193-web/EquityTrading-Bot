@@ -26,28 +26,107 @@ function computeProfitLoss(amount: number): number {
   return Math.abs(raw) < 1 ? (isWin ? 1 : -1) : raw;
 }
 
+export function getStartOfToday(timezone?: string): Date {
+  const now = new Date();
+  const tz = timezone || "UTC";
+  try {
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: tz,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    const todayStr = formatter.format(now);
+    const candidateUtc = new Date(todayStr + "T00:00:00.000Z");
+    const fullFormatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: tz,
+      hour12: false,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    const candidateLocalStr = fullFormatter.format(candidateUtc);
+    const [cDate, cTime] = candidateLocalStr.split(", ");
+    const [ch, cm, cs] = cTime.split(":").map(Number);
+    const candidateMsIntoTargetDay =
+      cDate === todayStr
+        ? (ch * 3600 + cm * 60 + cs) * 1000
+        : -(24 * 3600 - (ch * 3600 + cm * 60 + cs)) * 1000;
+    return new Date(candidateUtc.getTime() - candidateMsIntoTargetDay);
+  } catch {
+    const start = new Date(now);
+    start.setUTCHours(0, 0, 0, 0);
+    return start;
+  }
+}
+
+export async function calculateAndSyncStats(accountId: string, timezone?: string) {
+  const startOfToday = getStartOfToday(timezone);
+
+  const [totalAgg, todayAgg, winCount] = await Promise.all([
+    prisma.simulatedTrade.aggregate({
+      where: { accountId, status: "CLOSED" },
+      _sum: { profitLoss: true },
+      _count: { id: true },
+    }),
+    prisma.simulatedTrade.aggregate({
+      where: {
+        accountId,
+        status: "CLOSED",
+        createdAt: { gte: startOfToday },
+      },
+      _sum: { profitLoss: true },
+    }),
+    prisma.simulatedTrade.count({
+      where: {
+        accountId,
+        status: "CLOSED",
+        profitLoss: { gte: 0 },
+      },
+    }),
+  ]);
+
+  const tradesCount = totalAgg._count.id;
+  const totalPnl = totalAgg._sum.profitLoss ?? new Prisma.Decimal(0);
+  const todayPnl = todayAgg._sum.profitLoss ?? new Prisma.Decimal(0);
+  const winRate = tradesCount > 0 ? (winCount / tradesCount) * 100 : 0;
+
+  const stats = await prisma.tradingStats.upsert({
+    where: { accountId },
+    update: {
+      totalPnl,
+      todayPnl,
+      tradesCount,
+      winCount,
+    },
+    create: {
+      accountId,
+      totalPnl,
+      todayPnl,
+      tradesCount,
+      winCount,
+    },
+  });
+
+  return {
+    ...stats,
+    winRate,
+  };
+}
+
 async function ensureTradingStats(accountId: string) {
   const existing = await prisma.tradingStats.findUnique({ where: { accountId } });
   if (existing) return existing;
   return prisma.tradingStats.create({ data: { accountId } });
 }
 
-async function resolveTrade(trade: SimulatedTrade) {
+async function resolveTrade(trade: SimulatedTrade, timezone?: string): Promise<SimulatedTrade> {
   const decimalPnl = trade.profitLoss;
-  const isWin = Number(decimalPnl) >= 0;
 
-  const stats = await ensureTradingStats(trade.accountId);
-
-  const [, , updatedTrade] = await prisma.$transaction([
-    prisma.tradingStats.update({
-      where: { accountId: trade.accountId },
-      data: {
-        totalPnl: { increment: decimalPnl },
-        todayPnl: { increment: decimalPnl },
-        tradesCount: stats.tradesCount + 1,
-        winCount: isWin ? stats.winCount + 1 : stats.winCount,
-      },
-    }),
+  const [, updatedTrade] = await prisma.$transaction([
     prisma.account.update({
       where: { id: trade.accountId },
       data: { balance: { increment: decimalPnl } },
@@ -56,11 +135,12 @@ async function resolveTrade(trade: SimulatedTrade) {
       where: { id: trade.id },
       data: { status: "CLOSED", closedAt: new Date() },
     }),
+    prisma.transaction.create({
+      data: { accountId: trade.accountId, type: "TRADE_PNL", amount: decimalPnl, status: "COMPLETED" },
+    }),
   ]);
 
-  await prisma.transaction.create({
-    data: { accountId: trade.accountId, type: "TRADE_PNL", amount: decimalPnl, status: "COMPLETED" },
-  });
+  await calculateAndSyncStats(trade.accountId, timezone);
 
   return updatedTrade;
 }
@@ -141,18 +221,18 @@ export async function getTradeHistory(userId: string, accountId: string, limit: 
   });
 }
 
-export async function getStats(userId: string, accountId: string) {
+export async function getStats(userId: string, accountId: string, timezone?: string) {
   await getOwnedAccountOrThrow(userId, accountId);
-  const stats = await ensureTradingStats(accountId);
-  
-  let winRate = stats.tradesCount > 0 ? (stats.winCount / stats.tradesCount) * 100 : 0;
-  if (winRate > 95 || winRate === 0) {
-    winRate = 85 + Math.random() * 10; // Fluctuate between 85% and 95%
-  } else if (winRate < 85) {
-    winRate = 85 + Math.random() * 3;
+
+  // Auto-settle any due open trades for this account so stats are immediately accurate
+  const dueTrade = await prisma.simulatedTrade.findFirst({
+    where: { accountId, status: "OPEN", closesAt: { lte: new Date() } },
+  });
+  if (dueTrade) {
+    await resolveTrade(dueTrade, timezone);
   }
-  
-  return { ...stats, winRate };
+
+  return calculateAndSyncStats(accountId, timezone);
 }
 
 /**
@@ -163,7 +243,8 @@ export async function getStats(userId: string, accountId: string) {
 export async function settleBotTrade(
   userId: string,
   accountId: string,
-  input: SettleBotTradeInput
+  input: SettleBotTradeInput,
+  timezone?: string
 ) {
   const account = await getOwnedAccountOrThrow(userId, accountId);
 
@@ -174,24 +255,12 @@ export async function settleBotTrade(
     throw new AppError("Insufficient balance to settle trade loss", 400);
   }
 
-  const isWin = !pnl.isNegative();
-  await ensureTradingStats(accountId);
-
   const now = new Date();
 
   const [updatedAccount] = await prisma.$transaction([
     prisma.account.update({
       where: { id: accountId },
       data: { balance: { increment: pnl } },
-    }),
-    prisma.tradingStats.update({
-      where: { accountId },
-      data: {
-        totalPnl: { increment: pnl },
-        todayPnl: { increment: pnl },
-        tradesCount: { increment: 1 },
-        winCount: isWin ? { increment: 1 } : undefined,
-      },
     }),
     prisma.transaction.create({
       data: {
@@ -219,6 +288,8 @@ export async function settleBotTrade(
       },
     }),
   ]);
+
+  await calculateAndSyncStats(accountId, timezone);
 
   return { balance: updatedAccount.balance, profitLoss: pnl };
 }

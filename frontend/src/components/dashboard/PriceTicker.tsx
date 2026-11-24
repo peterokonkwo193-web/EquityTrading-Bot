@@ -1,12 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import clsx from "clsx";
-import { fetchTicker } from "@/lib/endpoints";
+import { useTicker } from "@/hooks/useTicker";
 import { TickerEntry } from "@/types";
-
-const POLL_INTERVAL_MS = 15000;
 
 function formatPrice(entry: TickerEntry) {
   if (entry.assetClass === "FOREX" && entry.symbol !== "XAUUSD") {
@@ -16,24 +13,7 @@ function formatPrice(entry: TickerEntry) {
 }
 
 export function PriceTicker() {
-  const [entries, setEntries] = useState<TickerEntry[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const poll = () => {
-      fetchTicker()
-        .then((data) => {
-          if (!cancelled) setEntries(data);
-        })
-        .catch(() => {});
-    };
-    poll();
-    const interval = setInterval(poll, POLL_INTERVAL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, []);
+  const { entries } = useTicker();
 
   if (entries.length === 0) return null;
 

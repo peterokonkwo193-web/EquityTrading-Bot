@@ -46,6 +46,8 @@ export interface SimulatedTrade {
   closesAt: string;
   closedAt: string | null;
   createdAt: string;
+  entryPrice?: string | null;
+  exitPrice?: string | null;
 }
 
 export interface TradingStats {
