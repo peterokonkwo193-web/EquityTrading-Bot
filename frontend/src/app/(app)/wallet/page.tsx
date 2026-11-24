@@ -72,13 +72,29 @@ const DEPOSIT_ADDRESSES: Record<string, string> = {
 
 const walletCache: Record<string, Wallet> = {};
 
+function getCachedWallet(accId: string | null): Wallet | null {
+  if (!accId) return null;
+  if (walletCache[accId]) return walletCache[accId];
+  if (typeof window !== "undefined") {
+    try {
+      const stored = sessionStorage.getItem(`wallet_${accId}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        walletCache[accId] = parsed;
+        return parsed;
+      }
+    } catch {}
+  }
+  return null;
+}
+
 export default function WalletPage() {
   const { selectedAccount } = useAccount();
   const status = useStatus();
 
   const accountId = selectedAccount?.id ?? null;
-  const [wallet, setWallet] = useState<Wallet | null>(() => (accountId ? walletCache[accountId] ?? null : null));
-  const [isLoading, setIsLoading] = useState(() => !(accountId && walletCache[accountId]));
+  const [wallet, setWallet] = useState<Wallet | null>(() => getCachedWallet(accountId));
+  const [isLoading, setIsLoading] = useState(() => !getCachedWallet(accountId));
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [isMembershipGateOpen, setIsMembershipGateOpen] = useState(false);
@@ -138,6 +154,11 @@ export default function WalletPage() {
     try {
       const data = await fetchWallet(accountId);
       walletCache[accountId] = data;
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem(`wallet_${accountId}`, JSON.stringify(data));
+        } catch {}
+      }
       setWallet(data);
     } catch {
       if (!walletCache[accountId]) setWallet(null);
@@ -148,8 +169,9 @@ export default function WalletPage() {
 
   useEffect(() => {
     if (!accountId) return;
-    if (walletCache[accountId]) {
-      setWallet(walletCache[accountId]);
+    const cached = getCachedWallet(accountId);
+    if (cached) {
+      setWallet(cached);
       setIsLoading(false);
     } else {
       setIsLoading(true);
@@ -161,10 +183,15 @@ export default function WalletPage() {
       fetchWallet(accountId)
         .then((data) => {
           walletCache[accountId] = data;
+          if (typeof window !== "undefined") {
+            try {
+              sessionStorage.setItem(`wallet_${accountId}`, JSON.stringify(data));
+            } catch {}
+          }
           setWallet(data);
         })
         .catch(() => {});
-    }, 8000);
+    }, 10000);
     return () => clearInterval(interval);
   }, [accountId]);
 

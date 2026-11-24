@@ -13,16 +13,33 @@ import { SimulatedTrade } from "@/types";
 
 const tradesCache: Record<string, SimulatedTrade[]> = {};
 
+function getCachedTrades(accId: string | null): SimulatedTrade[] {
+  if (!accId) return [];
+  if (tradesCache[accId]) return tradesCache[accId];
+  if (typeof window !== "undefined") {
+    try {
+      const stored = sessionStorage.getItem(`trades_history_${accId}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        tradesCache[accId] = parsed;
+        return parsed;
+      }
+    } catch {}
+  }
+  return [];
+}
+
 export default function HistoryPage() {
   const { selectedAccount } = useAccount();
   const accountId = selectedAccount?.id ?? null;
-  const [trades, setTrades] = useState<SimulatedTrade[]>(() => (accountId ? tradesCache[accountId] ?? [] : []));
-  const [isLoading, setIsLoading] = useState(() => !(accountId && tradesCache[accountId]));
+  const [trades, setTrades] = useState<SimulatedTrade[]>(() => getCachedTrades(accountId));
+  const [isLoading, setIsLoading] = useState(() => getCachedTrades(accountId).length === 0);
 
   useEffect(() => {
     if (!accountId) return;
-    if (tradesCache[accountId]) {
-      setTrades(tradesCache[accountId]);
+    const cached = getCachedTrades(accountId);
+    if (cached.length > 0) {
+      setTrades(cached);
       setIsLoading(false);
     } else {
       setIsLoading(true);
@@ -32,6 +49,11 @@ export default function HistoryPage() {
       .then((data) => {
         if (!cancelled) {
           tradesCache[accountId] = data;
+          if (typeof window !== "undefined") {
+            try {
+              sessionStorage.setItem(`trades_history_${accountId}`, JSON.stringify(data));
+            } catch {}
+          }
           setTrades(data);
         }
       })

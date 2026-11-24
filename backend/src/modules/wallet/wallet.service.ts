@@ -22,8 +22,24 @@ function isTaxActive(account: { taxActive: boolean; taxExpiresAt: Date | null })
 export async function getWallet(userId: string, accountId: string) {
   const account = await getOwnedAccountOrThrow(userId, accountId);
 
-  const txs = await prisma.walletTransaction.findMany({
+  // Single fast query that explicitly excludes heavy paymentProof base64 strings
+  const history = await prisma.walletTransaction.findMany({
     where: { accountId },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      accountId: true,
+      type: true,
+      asset: true,
+      network: true,
+      amount: true,
+      fiatAmount: true,
+      destinationAddress: true,
+      status: true,
+      txHash: true,
+      createdAt: true,
+      updatedAt: true,
+    },
   });
 
   let totalDeposits = new Prisma.Decimal(0);
@@ -31,7 +47,7 @@ export async function getWallet(userId: string, accountId: string) {
   let pendingDeposits = new Prisma.Decimal(0);
   let pendingWithdrawals = new Prisma.Decimal(0);
 
-  txs.forEach((tx) => {
+  for (const tx of history) {
     if (tx.type === "DEPOSIT") {
       if (tx.status === "APPROVED") {
         totalDeposits = totalDeposits.plus(tx.fiatAmount);
@@ -45,12 +61,7 @@ export async function getWallet(userId: string, accountId: string) {
         pendingWithdrawals = pendingWithdrawals.plus(tx.fiatAmount);
       }
     }
-  });
-
-  const history = await prisma.walletTransaction.findMany({
-    where: { accountId },
-    orderBy: { createdAt: "desc" },
-  });
+  }
 
   // Trading limit scales with cumulative approved deposits: every $100
   // deposited unlocks $10,000 of tradeable account limit. New deposits
