@@ -92,6 +92,7 @@ export default function TradingBotPage() {
   const [rotationMsg, setRotationMsg] = useState("");
   const [trades, setTrades] = useState<SimulatedTradeItem[]>([]);
   const [currentTrade, setCurrentTrade] = useState<SimulatedTradeItem | null>(null);
+  const [tradeTimer, setTradeTimer] = useState<number>(0);
   const [sessionProfit, setSessionProfit] = useState<number>(0);
   const [, setActivityLogs] = useState<string[]>(["Algo Engine ready. Select a market class to begin."]);
   const [accountLimit, setAccountLimit] = useState<number>(Infinity);
@@ -160,6 +161,7 @@ export default function TradingBotPage() {
       stopRequestedRef.current = false;
       isBotActiveRef.current = false;
       setIsBotActive(false);
+      setTradeTimer(0);
       setBotStatus("Idle");
       addLog("Bot stopped successfully. Returned to idle.");
       return;
@@ -168,6 +170,7 @@ export default function TradingBotPage() {
     if (Number(selectedAccount.balance) >= accountLimitRef.current) {
       isBotActiveRef.current = false;
       setIsBotActive(false);
+      setTradeTimer(0);
       setBotStatus("Idle");
       status.error("Account limit reached. Make a new deposit to unlock a higher trading limit.");
       addLog("Execution terminated: Account limit reached.");
@@ -177,32 +180,18 @@ export default function TradingBotPage() {
     if (currentAmount > Number(selectedAccount.balance)) {
       isBotActiveRef.current = false;
       setIsBotActive(false);
+      setTradeTimer(0);
       setBotStatus("Idle");
       status.error("Insufficient available balance to proceed. Trading bot stopped.");
       addLog("Execution terminated: Insufficient available balance.");
       return;
     }
 
-    setBotStatus("Scanning");
-    addLog("Scanning market liquidity & order books...");
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    if (!isBotActiveRef.current) return;
-
-    setBotStatus("Analyzing");
-    addLog("Analyzing market trends and volumes...");
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    if (!isBotActiveRef.current) return;
-
     const assets = activeMarket === "crypto" ? CRYPTO_ASSETS : FOREX_ASSETS;
     const selectedAsset = assets[Math.floor(Math.random() * assets.length)];
     const direction = Math.random() < 0.5 ? "BUY" : "SELL";
     const entryPrice = getAssetPrice(selectedAsset);
     const duration = 10;
-
-    setBotStatus("Trading");
-    addLog(`Entry confirmed for ${selectedAsset}. Generating order...`);
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    if (!isBotActiveRef.current) return;
 
     const tradeId = Math.random().toString(36).substring(2, 10).toUpperCase();
     const newTrade: SimulatedTradeItem = {
@@ -219,20 +208,24 @@ export default function TradingBotPage() {
     };
 
     setCurrentTrade(newTrade);
-    setBotStatus("Monitoring");
+    setBotStatus("Trading");
     addLog(`Opened ${direction} position on ${selectedAsset} at ${entryPrice.toFixed(4)}`);
 
-    for (let s = duration; s > 0; s--) {
-      if (!isBotActiveRef.current) return;
+    // Strictly 10-second trade loop: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+    for (let s = 1; s <= duration; s++) {
+      if (!isBotActiveRef.current) {
+        setTradeTimer(0);
+        return;
+      }
+      setTradeTimer(s);
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    if (!isBotActiveRef.current) return;
+    if (!isBotActiveRef.current) {
+      setTradeTimer(0);
+      return;
+    }
 
-    setBotStatus("Closing Position");
-    addLog(`Closing position for ${selectedAsset}...`);
-    await new Promise((resolve) => setTimeout(resolve, 350));
-    if (!isBotActiveRef.current) return;
-
+    // Trade execution & settlement at second 10
     const winLossSequence = [true, true, false, true, true, true, false, true, true, false, true, true, true, false, true, true, false, true, true, false];
     if (botStartIndexRef.current === -1) {
       botStartIndexRef.current = Math.floor(Math.random() * winLossSequence.length);
@@ -276,23 +269,21 @@ export default function TradingBotPage() {
         console.error("Failed to sync trade balance with backend", e);
       }
     }
-    if (!isBotActiveRef.current) return;
+    if (!isBotActiveRef.current) {
+      setTradeTimer(0);
+      return;
+    }
 
     setSessionProfit((prev) => prev + finalProfitLoss);
     setTrades((prev) => [closedTrade, ...prev]);
     setCurrentTrade(null);
-    addLog(`Position closed. Return: ${finalProfitLoss >= 0 ? "+" : ""}${formatCurrency(finalProfitLoss, currency)} (${returnPct.toFixed(2)}%)`);
+    setTradeTimer(0);
+    addLog(`Trade executed. Return: ${finalProfitLoss >= 0 ? "+" : ""}${formatCurrency(finalProfitLoss, currency)} (${returnPct.toFixed(2)}%)`);
 
     if (!isBotActiveRef.current) return;
 
-    setBotStatus("Scanning");
-    addLog("Searching for next high probability entry. Next trade in 10s...");
-    for (let c = 10; c > 0; c--) {
-      if (!isBotActiveRef.current) break;
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-    if (!isBotActiveRef.current) return;
-
+    // Immediately trigger next trade's 10-second countdown (no idle delay)
+    await new Promise((resolve) => setTimeout(resolve, 200));
     if (isBotActiveRef.current && executeNextTradeRef.current) {
       executeNextTradeRef.current();
     }
@@ -321,8 +312,8 @@ export default function TradingBotPage() {
     }
 
     setStartupStep(-1);
-    setBotStatus("Scanning");
-    addLog("Bot started successfully. Listening for market entries.");
+    setBotStatus("Trading");
+    addLog("Bot started successfully. Executing first trade.");
     if (executeNextTradeRef.current) executeNextTradeRef.current();
   };
 
@@ -331,6 +322,7 @@ export default function TradingBotPage() {
     stopRequestedRef.current = false;
     setIsBotActive(false);
     setCurrentTrade(null);
+    setTradeTimer(0);
     setBotStatus("Idle");
     addLog("Bot stopped. Returned to idle.");
   };
@@ -495,7 +487,7 @@ export default function TradingBotPage() {
       {botStatus !== "Initializing" && isBotActive && activeMarket && (
         <div className="flex flex-col gap-2.5">
 
-          {/* 2×2 Stats Grid */}
+          {/* 2×2 Stats Grid — Large bold figures */}
           <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
 
             {/* Available Balance */}
@@ -504,7 +496,7 @@ export default function TradingBotPage() {
                 <WalletIcon className="h-3.5 w-3.5 text-text-secondary shrink-0" />
                 <span className="truncate">Available Balance</span>
               </div>
-              <div className="text-sm sm:text-base md:text-lg font-bold text-gold font-mono mt-1.5 truncate">
+              <div className="text-xl sm:text-2xl font-bold text-gold font-mono mt-1.5 tracking-tight truncate">
                 {formatCurrency(balance, currency)}
               </div>
             </div>
@@ -515,7 +507,7 @@ export default function TradingBotPage() {
                 <TrendingUp className="h-3.5 w-3.5 text-text-secondary shrink-0" />
                 <span className="truncate">Bot PnL ({activeMarket.toUpperCase()})</span>
               </div>
-              <div className={`text-sm sm:text-base md:text-lg font-bold font-mono mt-1.5 truncate ${sessionProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+              <div className={`text-xl sm:text-2xl font-bold font-mono mt-1.5 tracking-tight truncate ${sessionProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                 {sessionProfit >= 0 ? "+" : ""}{formatCurrency(sessionProfit, currency)}
               </div>
             </div>
@@ -526,22 +518,22 @@ export default function TradingBotPage() {
                 <Activity className="h-3.5 w-3.5 text-text-secondary shrink-0" />
                 <span className="truncate">Total Trades</span>
               </div>
-              <div className="text-sm sm:text-base md:text-lg font-bold text-white font-mono mt-1 truncate">
+              <div className="text-xl sm:text-2xl font-bold text-white font-mono mt-1 tracking-tight truncate">
                 {totalTrades}
               </div>
               <div className="flex items-center gap-3 mt-1.5">
                 <div className="flex items-start gap-1">
-                  <ArrowUpRight className="h-3 w-3 text-emerald-400 mt-0.5 shrink-0" />
-                  <div className="text-[10px] leading-tight text-emerald-400">
-                    <div>Wins:</div>
-                    <div className="font-semibold">{winningTrades}</div>
+                  <ArrowUpRight className="h-3.5 w-3.5 text-emerald-400 mt-0.5 shrink-0" />
+                  <div className="leading-tight text-emerald-400">
+                    <div className="text-[10px] font-medium">Wins:</div>
+                    <div className="text-xs sm:text-sm font-bold font-mono">{winningTrades}</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-1">
-                  <ArrowDownRight className="h-3 w-3 text-rose-400 mt-0.5 shrink-0" />
-                  <div className="text-[10px] leading-tight text-rose-400">
-                    <div>Losses:</div>
-                    <div className="font-semibold">{losingTrades}</div>
+                  <ArrowDownRight className="h-3.5 w-3.5 text-rose-400 mt-0.5 shrink-0" />
+                  <div className="leading-tight text-rose-400">
+                    <div className="text-[10px] font-medium">Losses:</div>
+                    <div className="text-xs sm:text-sm font-bold font-mono">{losingTrades}</div>
                   </div>
                 </div>
               </div>
@@ -553,7 +545,7 @@ export default function TradingBotPage() {
                 <Target className="h-3.5 w-3.5 text-text-secondary shrink-0" />
                 <span className="truncate">Win Rate</span>
               </div>
-              <div className="text-sm sm:text-base md:text-lg font-bold text-[#3b82f6] font-mono mt-1.5 truncate">
+              <div className="text-xl sm:text-2xl font-bold text-[#3b82f6] font-mono mt-1.5 tracking-tight truncate">
                 {totalTrades > 0 ? `${winRate.toFixed(1)}%` : "0.0%"}
               </div>
             </div>
@@ -572,9 +564,11 @@ export default function TradingBotPage() {
               Trading {activeMarket.toUpperCase()} · {formatCurrency(parseFloat(tradeAmount) || 0, currency)}/trade
             </p>
 
-            {/* Dynamic Gold Status Text */}
+            {/* Dynamic Gold Status Text with active countdown display */}
             <p className="text-[11px] sm:text-xs font-medium text-gold min-h-[16px]">
-              {rotationMsg || "Liquidity Zone Found"}
+              {tradeTimer > 0
+                ? `Trade Execution: ${tradeTimer}s / 10s · Liquidity Zone Found`
+                : (rotationMsg || "Liquidity Zone Found")}
             </p>
 
             {/* Stop Bot Button */}
@@ -595,7 +589,7 @@ export default function TradingBotPage() {
               <h3 className="font-bold text-white text-xs">Live Trade Feed</h3>
             </div>
 
-            {/* Active Running Trade */}
+            {/* Active Running Trade with live 1..10s countdown */}
             {currentTrade && (
               <div className="flex items-center justify-between gap-2.5 rounded-xl border border-gold/20 bg-gold/[0.03] p-2.5">
                 <div className="flex items-center gap-2.5">
@@ -611,9 +605,9 @@ export default function TradingBotPage() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 text-[11px] text-gold font-semibold animate-pulse">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  <span>Executing...</span>
+                <div className="flex items-center gap-1.5 text-xs text-gold font-bold font-mono animate-pulse">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>{tradeTimer > 0 ? `${tradeTimer}s / 10s` : "Executing..."}</span>
                 </div>
               </div>
             )}
