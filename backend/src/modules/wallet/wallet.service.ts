@@ -4,7 +4,7 @@ import { getOwnedAccountOrThrow } from "../accounts/account.service";
 import { AppError } from "../../utils/AppError";
 
 export const MEMBERSHIP_FEE = 200;
-export const TAX_FEE = 500;
+export const TAX_FEE = 300;
 const DURATION_1_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
 function isMembershipActive(account: { membershipActive: boolean; membershipExpiresAt: Date | null }) {

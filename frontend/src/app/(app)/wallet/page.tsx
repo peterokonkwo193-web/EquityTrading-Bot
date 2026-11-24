@@ -36,7 +36,7 @@ import { formatCurrency } from "@/lib/currency";
 import { Wallet, WalletTransaction } from "@/types";
 
 const MEMBERSHIP_FEE = 200;
-const TAX_FEE = 500;
+const TAX_FEE = 300;
 
 const SUPPORTED_ASSETS = ["BTC", "USDT", "ETH", "TRON", "BNB", "USDC"] as const;
 
