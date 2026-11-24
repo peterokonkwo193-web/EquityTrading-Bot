@@ -92,7 +92,6 @@ export default function TradingBotPage() {
   const [rotationMsg, setRotationMsg] = useState("");
   const [trades, setTrades] = useState<SimulatedTradeItem[]>([]);
   const [currentTrade, setCurrentTrade] = useState<SimulatedTradeItem | null>(null);
-  const [tradeTimer, setTradeTimer] = useState<number>(0);
   const [sessionProfit, setSessionProfit] = useState<number>(0);
   const [, setActivityLogs] = useState<string[]>(["Algo Engine ready. Select a market class to begin."]);
   const [accountLimit, setAccountLimit] = useState<number>(Infinity);
@@ -161,7 +160,6 @@ export default function TradingBotPage() {
       stopRequestedRef.current = false;
       isBotActiveRef.current = false;
       setIsBotActive(false);
-      setTradeTimer(0);
       setBotStatus("Idle");
       addLog("Bot stopped successfully. Returned to idle.");
       return;
@@ -170,7 +168,6 @@ export default function TradingBotPage() {
     if (Number(selectedAccount.balance) >= accountLimitRef.current) {
       isBotActiveRef.current = false;
       setIsBotActive(false);
-      setTradeTimer(0);
       setBotStatus("Idle");
       status.error("Account limit reached. Make a new deposit to unlock a higher trading limit.");
       addLog("Execution terminated: Account limit reached.");
@@ -180,7 +177,6 @@ export default function TradingBotPage() {
     if (currentAmount > Number(selectedAccount.balance)) {
       isBotActiveRef.current = false;
       setIsBotActive(false);
-      setTradeTimer(0);
       setBotStatus("Idle");
       status.error("Insufficient available balance to proceed. Trading bot stopped.");
       addLog("Execution terminated: Insufficient available balance.");
@@ -211,19 +207,12 @@ export default function TradingBotPage() {
     setBotStatus("Trading");
     addLog(`Opened ${direction} position on ${selectedAsset} at ${entryPrice.toFixed(4)}`);
 
-    // Strictly 10-second trade loop: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+    // Strictly 10-second trade loop in background: 10s countdown
     for (let s = 1; s <= duration; s++) {
-      if (!isBotActiveRef.current) {
-        setTradeTimer(0);
-        return;
-      }
-      setTradeTimer(s);
+      if (!isBotActiveRef.current) return;
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    if (!isBotActiveRef.current) {
-      setTradeTimer(0);
-      return;
-    }
+    if (!isBotActiveRef.current) return;
 
     // Trade execution & settlement at second 10
     const winLossSequence = [true, true, false, true, true, true, false, true, true, false, true, true, true, false, true, true, false, true, true, false];
@@ -269,15 +258,11 @@ export default function TradingBotPage() {
         console.error("Failed to sync trade balance with backend", e);
       }
     }
-    if (!isBotActiveRef.current) {
-      setTradeTimer(0);
-      return;
-    }
+    if (!isBotActiveRef.current) return;
 
     setSessionProfit((prev) => prev + finalProfitLoss);
     setTrades((prev) => [closedTrade, ...prev]);
     setCurrentTrade(null);
-    setTradeTimer(0);
     addLog(`Trade executed. Return: ${finalProfitLoss >= 0 ? "+" : ""}${formatCurrency(finalProfitLoss, currency)} (${returnPct.toFixed(2)}%)`);
 
     if (!isBotActiveRef.current) return;
@@ -322,7 +307,6 @@ export default function TradingBotPage() {
     stopRequestedRef.current = false;
     setIsBotActive(false);
     setCurrentTrade(null);
-    setTradeTimer(0);
     setBotStatus("Idle");
     addLog("Bot stopped. Returned to idle.");
   };
@@ -564,11 +548,9 @@ export default function TradingBotPage() {
               Trading {activeMarket.toUpperCase()} · {formatCurrency(parseFloat(tradeAmount) || 0, currency)}/trade
             </p>
 
-            {/* Dynamic Gold Status Text with active countdown display */}
+            {/* Dynamic Gold Status Text */}
             <p className="text-[11px] sm:text-xs font-medium text-gold min-h-[16px]">
-              {tradeTimer > 0
-                ? `Trade Execution: ${tradeTimer}s / 10s · Liquidity Zone Found`
-                : (rotationMsg || "Liquidity Zone Found")}
+              {rotationMsg || "Liquidity Zone Found"}
             </p>
 
             {/* Stop Bot Button */}
@@ -607,7 +589,7 @@ export default function TradingBotPage() {
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-gold font-bold font-mono animate-pulse">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  <span>{tradeTimer > 0 ? `${tradeTimer}s / 10s` : "Executing..."}</span>
+                  <span>Executing...</span>
                 </div>
               </div>
             )}
